@@ -922,11 +922,12 @@ def parse_input_free_text(
                 response_format={"type": "json_object"},
             )
             llm_parsed = json.loads(resp.choices[0].message.content)
-        else:
+         else:
             import ollama
             prompt = build_prompt_text(user_text, cats, prior_facts)
-            out = ollama.chat(model=os.getenv("LOCAL_MODEL", "llama3"),
-                              messages=[{"role": "user", "content": prompt}])
+            # ✅ Default model is DeepSeek unless overridden
+            model_name = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
+            out = ollama.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
             m = re.search(r"\{.*\}", out["message"]["content"], re.S)
             llm_parsed = json.loads(m.group(0)) if m else {}
     except Exception as e:
