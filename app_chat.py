@@ -19,6 +19,7 @@ def load_data(path, last_modified):
     df.columns = [c.strip() for c in df.columns]
     return df
 
+
 # Resolve data path
 primary_path = os.path.join("data", "bacteria_db.xlsx")
 fallback_path = os.path.join("bacteria_db.xlsx")
@@ -42,14 +43,14 @@ st.markdown(
     "I’ll parse it, run the BactAI-D engine, and explain the result."
 )
 
-# Confidence explainer (new)
+# Confidence explainer
 st.markdown(
     """
 **How to read the scores**
 
-- **Confidence** – Based **only on the tests you entered**. It’s the proportion of matches across the fields you actually provided (Unknowns are ignored).
+- **Confidence** – Based **only on the tests you entered**. It reflects matches across the fields you actually provided (Unknowns are ignored).  
 - **True Confidence (All Tests)** – The same internal score scaled by **all possible fields in the database**.  
-  This shows how strong the match would be **if every field were filled**. It often reads lower when many inputs are Unknown.
+  This shows how strong the match would be **if every field were filled**; it’s often lower when many inputs are Unknown.
 """
 )
 
@@ -64,13 +65,16 @@ if "last_results" not in st.session_state:
 # ---- SIDEBAR: PARSER SETTINGS ----
 st.sidebar.markdown("### 🧠 Parser Settings")
 parser_choice = st.sidebar.radio("Choose Parser Model", ["Local Llama (via Ollama)", "GPT (Cloud)"], index=0)
+
 # Expose choices via env vars for parser_llm
 os.environ["BACTAI_MODEL"] = "gpt" if "GPT" in parser_choice else "local"
-# Optional: allow overriding model names (advanced users)
-openai_model = st.sidebar.text_input("OpenAI model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
-local_model = st.sidebar.text_input("Local model (Ollama)", os.getenv("LOCAL_MODEL", "llama3"))
-os.environ["OPENAI_MODEL"] = openai_model
-os.environ["LOCAL_MODEL"] = local_model
+os.environ["OPENAI_MODEL"] = "gpt-4o-mini"
+os.environ["LOCAL_MODEL"] = "llama3"
+
+# Display (read-only) current model names
+st.sidebar.markdown("**Active Models**")
+st.sidebar.text_input("OpenAI model", value=os.environ["OPENAI_MODEL"], disabled=True)
+st.sidebar.text_input("Local model (Ollama)", value=os.environ["LOCAL_MODEL"], disabled=True)
 
 st.sidebar.markdown("---")
 
@@ -81,7 +85,7 @@ with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True
     else:
         st.caption("No parsed fields yet. Send a message to begin.")
 
-# ---- SIDEBAR: SUPPORTED TESTS (from your DB columns) ----
+# ---- SIDEBAR: SUPPORTED TESTS ----
 with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
     fields = [c for c in eng.db.columns if c != "Genus"]
 
@@ -92,16 +96,16 @@ with st.sidebar.expander("🧬 Supported Tests (current database fields)", expan
     growth_other = [f for f in fields if f not in used]
 
     if morph_stain:
-        st.markdown("**Morphology / Stain**  ")
+        st.markdown("**Morphology / Stain**")
         st.write(", ".join(sorted(morph_stain)))
     if enzyme_react:
-        st.markdown("**Enzyme / Fermentation Reactions**  ")
+        st.markdown("**Enzyme / Fermentation Reactions**")
         st.write(", ".join(sorted(enzyme_react)))
     if hemo:
-        st.markdown("**Haemolysis / Hemolysis**  ")
+        st.markdown("**Haemolysis / Hemolysis**")
         st.write(", ".join(sorted(hemo)))
     if growth_other:
-        st.markdown("**Other / Growth / Conditions**  ")
+        st.markdown("**Other / Growth / Conditions**")
         st.write(", ".join(sorted(growth_other)))
 
 st.sidebar.markdown("---")
@@ -118,17 +122,17 @@ for msg in st.session_state.history:
 # ---- CHAT INPUT ----
 user_msg = st.chat_input("Tell me your observations…")
 if user_msg:
-    # 1) Show user message
+    # 1  Show user message
     st.session_state.history.append({"role": "user", "content": user_msg})
     st.chat_message("user").markdown(user_msg)
 
-    # 2) Parse free text -> structured fields (LLM or fallback)
+    # 2  Parse text → fields (LLM or fallback)
     parsed = parse_input_free_text(user_msg, prior_facts=st.session_state.facts)
 
-    # 3) Run engine
+    # 3  Run engine
     results = eng.identify(parsed)
 
-    # 4) Compose reply
+    # 4  Compose reply
     if not results:
         reply = (
             "I couldn't find a good match with the current information. "
@@ -154,12 +158,12 @@ if user_msg:
 
         reply = "\n\n".join(reply_lines)
 
-    # 5) Update memory
+    # 5  Update memory
     st.session_state.facts.update({k: v for k, v in parsed.items() if v and v != "Unknown"})
     st.session_state.last_results = results
     st.session_state.history.append({"role": "assistant", "content": reply})
 
-    # 6) Show assistant message
+    # 6  Show assistant message
     st.chat_message("assistant").markdown(reply)
 
 # ---- FOOTER ----
