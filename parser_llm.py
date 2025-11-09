@@ -1,5 +1,6 @@
-# parser_llm.py — Step 1.6 n++++ (Unicode/whitespace, haemolysis bridge, NaCl tolerant,
-# Esculin alias, growth fixes, Gram parsing, decarboxylases, robust "but not … or/nor …")
+# parser_llm.py — Step 1.6 n+++++ (Unicode/whitespace, haemolysis bridge, NaCl tolerant,
+# Esculin alias, growth fixes, Gram parsing, decarboxylases,
+# robust "but not … or/nor …" + fallback sweep to catch terminal items like rhamnose)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -199,13 +200,19 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         r"(?:ferments|utilizes)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)", t, flags=re.I
     ):
         segment = m.group(1)
-        # convert "or"/"nor" into commas so terminal items (e.g., rhamnose) are caught
+        # convert "or"/"nor" into commas so terminal items are caught
         segment = re.sub(r"\bor\b", ",", segment, flags=re.I)
         segment = re.sub(r"\bnor\b", ",", segment, flags=re.I)
         for a in _tokenize_list(segment):
             # Strip trailing punctuation robustly
             a = re.sub(r"[.,;:\s]+$", "", a)
             set_field_by_base(a, "Negative")
+
+        # Fallback sweep: for ANY fermentation base mentioned in this segment, force Negative
+        seg_l = " " + segment.lower() + " "
+        for base in base_to_field.keys():
+            if re.search(rf"\b{re.escape(base)}\b", seg_l, flags=re.I):
+                set_field_by_base(base, "Negative")
 
     # Shorthand "lactose -" / "rhamnose +"
     for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t, flags=re.I):
