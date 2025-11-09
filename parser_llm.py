@@ -39,6 +39,7 @@ import difflib
 import os, re, json, sys, math
 from typing import Dict, List, Set, Tuple, Optional
 from parser_basic import parse_input_free_text as fallback_parser
+from datetime import datetime
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Global caches / lightweight learning store paths
