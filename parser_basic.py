@@ -1131,26 +1131,27 @@ def analyze_feedback_and_learn(feedback_path="parser_feedback.json", memory_path
 
     print(f"🧠 Learned {len(rule_suggestions)} new parser hints.")
 # ──────────────────────────────────────────────────────────────────────────────
-# 🧬 Step 3 — Self-Updating Regex Heuristic Patcher
+# 🧬 Step 3 — Advanced Auto-Updating Regex Heuristic Patcher
 # ──────────────────────────────────────────────────────────────────────────────
 
 def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="parser_llm.py"):
     """
-    Reads parser_memory.json for auto_heuristics and injects new regex rules
-    into parser_llm.py automatically. 
+    Reads parser_memory.json and injects *actual regex lines* into parser_llm.py lists
+    for recurring fields with parsing errors. Adds comments + timestamps for safety.
     """
+
     if not os.path.exists(memory_path):
-        print("⚠️ No memory file found; skipping regex update.")
+        print("⚠️ No parser memory file found; skipping regex update.")
         return
 
     try:
         with open(memory_path, "r", encoding="utf-8") as f:
             memory = json.load(f)
+        auto_heuristics = memory.get("auto_heuristics", {})
     except Exception as e:
-        print(f"⚠️ Failed to load memory file: {e}")
+        print(f"⚠️ Could not read memory file: {e}")
         return
 
-    auto_heuristics = memory.get("auto_heuristics", {})
     if not auto_heuristics:
         print("ℹ️ No new regex heuristics to apply.")
         return
@@ -1158,31 +1159,85 @@ def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="pars
     try:
         with open(parser_file, "r", encoding="utf-8") as f:
             code = f.read()
-
-        # Inject new patterns into the regex section between specific tags
-        marker_start = "# === AUTO-LEARNED PATTERNS START ==="
-        marker_end = "# === AUTO-LEARNED PATTERNS END ==="
-
-        pattern_block = [marker_start, "\n"]
-        for field, rule in auto_heuristics.items():
-            comment = f"# Learned rule for {field}: {rule['rule']} (seen {rule['count']} times)\n"
-            pattern_block.append(comment)
-        pattern_block.append(marker_end)
-
-        # Replace old block or append if missing
-        if marker_start in code and marker_end in code:
-            code = re.sub(
-                f"{re.escape(marker_start)}.*?{re.escape(marker_end)}",
-                "\n".join(pattern_block),
-                code,
-                flags=re.S,
-            )
-        else:
-            code += "\n\n" + "\n".join(pattern_block)
-
-        with open(parser_file, "w", encoding="utf-8") as f:
-            f.write(code)
-
-        print(f"🧠 Updated {parser_file} with {len(auto_heuristics)} learned regex heuristics.")
     except Exception as e:
-        print(f"❌ Failed to update regex section: {e}")
+        print(f"❌ Could not read parser file: {e}")
+        return
+
+    # --- Target pattern lists to modify ---
+    pattern_lists = {
+        "oxidase": "OXIDASE_PATTERNS",
+        "catalase": "CATALASE_PATTERNS",
+        "indole": "INDOLE_PATTERNS",
+        "vp": "VP_PATTERNS",
+        "methyl red": "MR_PATTERNS",
+        "urease": "UREASE_PATTERNS",
+        "citrate": "CITRATE_PATTERNS",
+        "h2s": "H2S_PATTERNS",
+        "coagulase": "COAGULASE_PATTERNS",
+        "lipase": "LIPASE_PATTERNS",
+        "esculin": "ESCULIN_PATTERNS",
+        "dnase": "DNASE_PATTERNS",
+        "gelatin": "GELATIN_PATTERNS",
+        "nitrate": "NITRATE_PATTERNS",
+        "decarboxylase": "DECARBOXYLASE_PATTERNS",
+        "fermentation": "FERMENTATION_PATTERNS",
+    }
+
+    updated = 0
+    for field, rule in auto_heuristics.items():
+        field_lower = field.lower()
+        pattern_list = None
+
+        # Match the field to its list
+        for key, list_name in pattern_lists.items():
+            if key in field_lower:
+                pattern_list = list_name
+                break
+
+        if not pattern_list:
+            continue  # Skip fields without a mapped list
+
+        # Build a simple learned regex from rule description
+        learned_regex = ""
+        if "positive" in rule["rule"].lower():
+            learned_regex = rf"r\"\\b{field_lower}\\s+(?:test\\s+)?(?:positive|detected)\\b\""
+        elif "negative" in rule["rule"].lower() or "not" in rule["rule"].lower():
+            learned_regex = rf"r\"\\b{field_lower}\\s+(?:test\\s+)?(?:negative|not\\s+detected)\\b\""
+        else:
+            learned_regex = rf"r\"\\b{field_lower}\\s+reaction\\b\""
+
+        # Add timestamp for traceability
+        comment = f"  # auto-learned {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ({rule['count']}x)\n"
+
+        # Build insert block
+        insertion = f"    {learned_regex},{comment}"
+
+        # Inject into the list safely
+        pattern_block_regex = rf"({pattern_list}\s*=\s*\[)([^\]]*)(\])"
+
+        new_code, count = re.subn(
+            pattern_block_regex,
+            rf"\1\2{insertion}\3",
+            code,
+            flags=re.S,
+        )
+
+        if count > 0:
+            code = new_code
+            updated += 1
+            print(f"✅ Added learned pattern for {field} → {pattern_list}")
+
+    if updated > 0:
+        # Append learning log at bottom of file
+        code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}) ===\n"
+        for f, r in auto_heuristics.items():
+            code += f"# {f}: {r['rule']} (seen {r['count']}x)\n"
+
+        try:
+            with open(parser_file, "w", encoding="utf-8") as f:
+                f.write(code)
+            print(f"🧠 Updated {parser_file} with {updated} new regex patterns.")
+        except Exception as e:
+            print(f"❌ Failed to write updates: {e}")
+    else:
+        print("ℹ️ No matching pattern lists found; no changes made.")
