@@ -1,13 +1,13 @@
-# parser_llm.py — Schema-clamped ultra build (TSI-only exclusion)
+# parser_llm.py — Schema-clamped ultra build (TSI-only exclusion + Colony Morphology vocab + Gamma→Variable)
 # - Unicode/whitespace normalization
 # - Robust fermentation parsing (incl. "but not … or/nor …" + fallback sweep)
 # - ONPG / NaCl tolerant / growth temp / Gram
-# - Media detection with **TSI-only exclusion**
-# - Colony morphology phrase capture
+# - Media detection with **TSI-only exclusion** and future-proof free-text
+# - Colony morphology tokenization → canonical semicolon list (dedup & title case)
 # - Oxygen requirement labels (Facultative Anaerobe, Aerobic, Anaerobic, Microaerophilic, Capnophilic, Intracellular)
 # - Decarboxylases / dihydrolase
-# - Haemolysis bridge: Type→Haemolysis (Alpha/Beta=Positive, Gamma/None=Negative)  ← change here if you prefer
-# - Clamp all values to your exact Excel spellings (with synonyms)
+# - Haemolysis bridge: Type→Haemolysis (Alpha/Beta=Positive, Gamma/None=Variable)
+# - Clamp values to your exact Excel spellings (with synonyms)
 # - Alias fixes (e.g., "Glucose Fermantation" → "Glucose Fermentation")
 
 import os, json, re
@@ -23,11 +23,11 @@ ALLOWED_VALUES: Dict[str, Set[str]] = {
     "Shape": {"Cocci", "Rods", "Bacilli", "Spiral", "Short Rods"},
     "Catalase": {"Positive", "Negative", "Variable"},
     "Oxidase": {"Positive", "Negative", "Variable"},
-    "Colony Morphology": set(),  # free text (you’ll provide later)
+    "Colony Morphology": set(),  # free text (normalized by vocabulary below)
     "Haemolysis": {"Positive", "Negative", "Variable"},
     "Haemolysis Type": {"None", "Beta", "Gamma", "Alpha"},
     "Indole": {"Positive", "Negative", "Variable"},
-    "Growth Temperature": set(),  # numeric user value (°C) — compare against DB "low//high"
+    "Growth Temperature": set(),  # numeric (°C) — compared to DB low//high
     "Media Grown On": set(),      # parsed + clamped when possible
     "Motility": {"Positive", "Negative", "Variable"},
     "Capsule": {"Positive", "Negative", "Variable"},
@@ -63,50 +63,48 @@ ALLOWED_VALUES: Dict[str, Set[str]] = {
     "Coagulase": {"Positive", "Negative", "Variable"},
 }
 
-# Media whitelist (from your list). We accept any "... Agar" names,
-# but keep these spellings when matched.
+# Media whitelist (exact spellings you provided; still accept others)
 MEDIA_WHITELIST = {
-    "MacConkey Agar", "Nutrient Agar", "ALOA", "Palcam", "Preston", "Columbia", "BP",
-    "Mannitol Salt Agar", "MRS", "Anaerobic Media", "XLD Agar", "TBG", "TCBS", "VID",
-    "EMB Agar", "CCI", "Salt Nutrient Agar", "Thayer Martin Agar", "Tryptic Soy Agar",
-    "Chocolate Agar", "Bacteroides Bile Esculin Agar", "KVLB Agar", "Charcoal Blood Agar",
-    "Anaerobic Blood Agar", "Yeast Extract Mannitol Agar", "Burks Medium", "Peptone Water",
-    "Sabouraud Dextrose Agar", "Yeast Extract Peptone Dextrose", "Malt Extract Agar",
-    "Middlebrook Agar", "Inorganic Mineral Nitrate Media", "Inorganic Mineral Ammonia Media",
-    "Iron Media", "Sulfur Media", "Organic Media", "Yeast Extract Agar", "Cellulose Agar",
-    "Baciillus Media", "Pyridoxal", "Lcysteine", "Ferrous Sulfate Media",
-    "Hayflicks Agar", "Cell Culture", "Intracellular", "Brain Heart Infusion Agar",
-    "Human Fibroblast Cell Culture", "BCYE Agar"
+    "MacConkey Agar","Nutrient Agar","ALOA","Palcam","Preston","Columbia","BP",
+    "Mannitol Salt Agar","MRS","Anaerobic Media","XLD Agar","TBG","TCBS","VID",
+    "EMB Agar","CCI","Salt Nutrient Agar","Thayer Martin Agar","Tryptic Soy Agar",
+    "Chocolate Agar","Bacteroides Bile Esculin Agar","KVLB Agar","Charcoal Blood Agar",
+    "Anaerobic Blood Agar","Yeast Extract Mannitol Agar","Burks Medium","Peptone Water",
+    "Sabouraud Dextrose Agar","Yeast Extract Peptone Dextrose","Malt Extract Agar",
+    "Middlebrook Agar","Inorganic Mineral Nitrate Media","Inorganic Mineral Ammonia Media",
+    "Iron Media","Sulfur Media","Organic Media","Yeast Extract Agar","Cellulose Agar",
+    "Baciillus Media","Pyridoxal","Lcysteine","Ferrous Sulfate Media","Hayflicks Agar",
+    "Cell Culture","Intracellular","Brain Heart Infusion Agar","Human Fibroblast Cell Culture","BCYE Agar"
 }
 
 # synonyms to clamp free-text to your exact spellings
 VALUE_SYNONYMS: Dict[str, Dict[str, str]] = {
     "Gram Stain": {
-        "gram positive": "Positive", "gram-positive": "Positive", "g+": "Positive",
-        "gram negative": "Negative", "gram-negative": "Negative", "g-": "Negative",
+        "gram positive": "Positive","gram-positive": "Positive","g+": "Positive",
+        "gram negative": "Negative","gram-negative": "Negative","g-": "Negative",
         "variable": "Variable"
     },
     "Shape": {
-        "rod": "Rods", "rods": "Rods", "bacillus": "Bacilli", "bacilli": "Bacilli",
-        "coccus": "Cocci", "cocci": "Cocci", "spiral": "Spiral", "short rods": "Short Rods"
+        "rod": "Rods","rods": "Rods","bacillus": "Bacilli","bacilli": "Bacilli",
+        "coccus": "Cocci","cocci": "Cocci","spiral": "Spiral","short rods": "Short Rods"
     },
     "Oxygen Requirement": {
-        "facultative": "Facultative Anaerobe", "facultative anaerobe": "Facultative Anaerobe",
-        "facultative aerobe": "Facultative Anaerobe",
-        "aerobe": "Aerobic", "aerobic": "Aerobic",
-        "anaerobe": "Anaerobic", "anaerobic": "Anaerobic",
-        "microaerophile": "Microaerophilic", "microaerophilic": "Microaerophilic",
-        "capnophile": "Capnophilic", "capnophilic": "Capnophilic",
+        "facultative": "Facultative Anaerobe","facultative anaerobe": "Facultative Anaerobe",
+        "facultative anaerobic": "Facultative Anaerobe","facultative aerobe": "Facultative Anaerobe",
+        "aerobe": "Aerobic","aerobic": "Aerobic","obligate aerobe": "Aerobic",
+        "anaerobe": "Anaerobic","anaerobic": "Anaerobic","obligate anaerobe": "Anaerobic",
+        "microaerophile": "Microaerophilic","microaerophilic": "Microaerophilic",
+        "capnophile": "Capnophilic","capnophilic": "Capnophilic",
         "intracellular": "Intracellular"
     },
     "Haemolysis Type": {
-        "beta": "Beta", "β": "Beta", "alpha": "Alpha", "α": "Alpha",
-        "gamma": "Gamma", "γ": "Gamma", "none": "None"
+        "beta": "Beta","β": "Beta","alpha": "Alpha","α": "Alpha",
+        "gamma": "Gamma","γ": "Gamma","none": "None"
     },
     "*POLARITY*": {
-        "+": "Positive", "positive": "Positive", "pos": "Positive",
-        "-": "Negative", "negative": "Negative", "neg": "Negative",
-        "weakly positive": "Variable", "variable": "Variable", "weak": "Variable"
+        "+": "Positive","positive": "Positive","pos": "Positive",
+        "-": "Negative","negative": "Negative","neg": "Negative",
+        "weakly positive": "Variable","variable": "Variable","weak": "Variable"
     },
 }
 
@@ -122,6 +120,92 @@ POLARITY_FIELDS = {
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Colony Morphology vocabulary (tokens we normalize & keep)
+# ──────────────────────────────────────────────────────────────────────────────
+CM_TOKENS = {
+    # sizes & measurements
+    "1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm","small","medium","large","tiny","pinpoint","subsurface","satellite",
+    # shapes/profile
+    "round","circular","convex","flat","domed","heaped","fried egg",
+    # edges/surface/texture
+    "smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte","shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly",
+    "ground glass","irregular edges","spreading","swarming","corrode","pit",
+    # opacity/transparency
+    "opaque","translucent","colourless","colorless",
+    # moisture
+    "dry","moist",
+    # colours
+    "white","grey","gray","cream","yellow","orange","pink","coral","red","green","violet","purple","black","brown","beige","tan","blue",
+    # extras
+    "bright","pigmented","waxy","ring","dingers ring"  # keep as given
+}
+
+def normalize_cm_phrase(text: str) -> str:
+    """Extract and normalize colony morphology tokens from free text."""
+    t = text.lower()
+    # pick up explicit "colonies ..." phrase first
+    spans = []
+    m = re.search(r"colon(?:y|ies)\s+(?:are|appear|were|appearing)\s+([^.]+?)(?:\s+on|\.)", t)
+    if m:
+        spans.append(m.group(1))
+    # also scan entire text for token hits (to catch scattered adjectives)
+    spans.append(t)
+
+    found: List[str] = []
+    def add(tok: str):
+        tok = tok.strip()
+        if not tok: return
+        if tok not in found:
+            found.append(tok)
+
+    # capture explicit measurements like "1/2mm", "0.5/1mm"
+    for s in spans:
+        for mm in re.findall(r"(?:\d+(?:\.\d+)?\/\d+(?:\.\d+)?mm|\d+(?:\.\d+)?mm|0\.5\/1mm|0\.5mm\/2mm|1\/3mm|2\/3mm|2\/4mm)", s):
+            add(mm)
+
+        # token scan (split on separators)
+        parts = re.split(r"[,;:/\-\s]+", s)
+        # rejoin multi-word tokens
+        s_norm = " " + re.sub(r"[,;/]", " ", s) + " "
+        multi = ["ground glass","irregular edges","fried egg","dingers ring"]
+        for mword in multi:
+            if f" {mword} " in s_norm:
+                add(mword)
+
+        for p in parts:
+            low = p.strip().lower()
+            if low in {"colorless"}: low = "colourless"
+            if low in CM_TOKENS:
+                add(low)
+
+    # title-case and clean duplicates; ensure nice order: size → shape/profile → texture → opacity → moisture → colour → extras
+    order_groups = [
+        {"1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm","tiny","small","medium","large","pinpoint","subsurface","satellite"},
+        {"round","circular","convex","flat","domed","heaped","fried egg"},
+        {"smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte","shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly","ground glass","irregular edges","spreading","swarming","corrode","pit","ring","dingers ring","waxy","bright","pigmented"},
+        {"opaque","translucent","colourless"},
+        {"dry","moist"},
+        {"white","grey","gray","cream","yellow","orange","pink","coral","red","green","violet","purple","black","brown","beige","tan","blue"},
+    ]
+    ordered: List[str] = []
+    seen = set()
+    for grp in order_groups:
+        for tok in found:
+            if tok in grp and tok not in seen:
+                ordered.append(tok); seen.add(tok)
+    # any leftovers
+    for tok in found:
+        if tok not in seen:
+            ordered.append(tok); seen.add(tok)
+
+    # final pretty
+    pretty = [t.title() if t not in {"mm"} else t for t in ordered]
+    # fix Grey/Gray consistency (prefer Grey)
+    pretty = [("Grey" if w == "Gray" else w) for w in pretty]
+    return "; ".join(pretty)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Schema helpers
 # ──────────────────────────────────────────────────────────────────────────────
 def normalize_columns(db_fields: List[str]) -> List[str]:
@@ -131,7 +215,7 @@ def _summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
     cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
     for f in normalize_columns(db_fields):
         n = f.strip(); l = n.lower()
-        if any(k in l for k in ["gram", "shape", "morphology", "motility", "capsule", "spore", "oxygen requirement", "media grown"]):
+        if any(k in l for k in ["gram","shape","morphology","motility","capsule","spore","oxygen requirement","media grown"]):
             cats["Morphology"].append(n)
         elif any(k in l for k in ["oxidase","catalase","urease","coagulase","lipase","indole","citrate","vp","methyl red","gelatin","dnase","nitrate","h2s","esculin"]):
             cats["Enzyme"].append(n)
@@ -154,29 +238,28 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
         if t in exact:
             alias[a.lower()] = exact[t]
 
-    add("mr", "Methyl Red"); add("methyl red", "Methyl Red")
-    add("vp", "VP"); add("voges proskauer", "VP")
-    add("h2s", "H2S"); add("dnase", "Dnase")
-    add("gelatin", "Gelatin Hydrolysis"); add("gelatin liquefaction", "Gelatin Hydrolysis")
-    add("lipase", "Lipase Test"); add("lipase test", "Lipase Test")
-    add("onpg", "ONPG"); add("onpg test", "ONPG")
-    add("esculin hydrolysis", "Esculin Hydrolysis")
-    add("nacl tolerance", "NaCl Tolerant (>=6%)"); add("nacl tolerant", "NaCl Tolerant (>=6%)"); add("nacl", "NaCl Tolerant (>=6%)")
-    add("nitrate", "Nitrate Reduction"); add("nitrate reduction", "Nitrate Reduction")
-    add("lysine decarboxylase", "Lysine Decarboxylase")
-    add("ornithine decarboxylase", "Ornitihine Decarboxylase"); add("ornitihine decarboxylase", "Ornitihine Decarboxylase")
-    add("arginine dihydrolase", "Arginine dihydrolase")
-    add("coagulase", "Coagulase"); add("citrate", "Citrate")
-    add("urease", "Urease"); add("indole", "Indole")
-    add("oxidase", "Oxidase"); add("catalase", "Catalase")
-    add("motility", "Motility"); add("capsule", "Capsule")
-    add("spore formation", "Spore Formation")
-    add("haemolysis", "Haemolysis"); add("haemolysis type", "Haemolysis Type")
-    add("growth temperature", "Growth Temperature")
-    add("media grown on", "Media Grown On")
-    add("oxygen requirement", "Oxygen Requirement")
-    add("gram stain", "Gram Stain"); add("shape", "Shape")
-    add("glucose fermantation", "Glucose Fermentation")  # typo → canonical
+    add("mr","Methyl Red"); add("methyl red","Methyl Red")
+    add("vp","VP"); add("voges proskauer","VP")
+    add("h2s","H2S"); add("dnase","Dnase"); add("gelatin","Gelatin Hydrolysis")
+    add("gelatin liquefaction","Gelatin Hydrolysis")
+    add("lipase","Lipase Test"); add("lipase test","Lipase Test")
+    add("onpg","ONPG"); add("onpg test","ONPG"); add("esculin hydrolysis","Esculin Hydrolysis")
+    add("nacl tolerance","NaCl Tolerant (>=6%)"); add("nacl tolerant","NaCl Tolerant (>=6%)"); add("nacl","NaCl Tolerant (>=6%)")
+    add("nitrate","Nitrate Reduction"); add("nitrate reduction","Nitrate Reduction")
+    add("lysine decarboxylase","Lysine Decarboxylase")
+    add("ornithine decarboxylase","Ornitihine Decarboxylase"); add("ornitihine decarboxylase","Ornitihine Decarboxylase")
+    add("arginine dihydrolase","Arginine dihydrolase")
+    add("coagulase","Coagulase"); add("citrate","Citrate")
+    add("urease","Urease"); add("indole","Indole")
+    add("oxidase","Oxidase"); add("catalase","Catalase")
+    add("motility","Motility"); add("capsule","Capsule")
+    add("spore formation","Spore Formation")
+    add("haemolysis","Haemolysis"); add("haemolysis type","Haemolysis Type")
+    add("growth temperature","Growth Temperature")
+    add("media grown on","Media Grown On")
+    add("oxygen requirement","Oxygen Requirement")
+    add("gram stain","Gram Stain"); add("shape","Shape")
+    add("glucose fermantation","Glucose Fermentation")  # typo → canonical
 
     # Fermentation bases
     for f in normalize_columns(db_fields):
@@ -184,7 +267,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
             base = f[:-12].strip().lower()
             alias[base] = f
 
-    # Media whitelist names map to "Media Grown On" key (value will be the joined list)
+    # Media whitelist names map to "Media Grown On" key (value is the joined list)
     for m in MEDIA_WHITELIST:
         alias[m.lower()] = "Media Grown On"
 
@@ -200,9 +283,9 @@ def normalize_text(raw: str) -> str:
     t = raw or ""
     t = t.replace("°", " °")
     t = t.translate(_SUBSCRIPT_DIGITS)
-    t = (t.replace("\u2010", "-").replace("\u2011", "-").replace("\u2012", "-")
-           .replace("\u2013", "-").replace("\u2014", "-"))
-    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)
+    t = (t.replace("\u2010","-").replace("\u2011","-").replace("\u2012","-")
+           .replace("\u2013","-").replace("\u2014","-"))
+    t = re.sub(r"hemolys","haemolys", t, flags=re.I)
     t = t.lower()
     t = re.sub(r"\s+", " ", t).strip()
     return t
@@ -398,6 +481,8 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     # Oxygen requirement
     if re.search(r"\bfacultative\b", t, flags=re.I):
         set_field("oxygen requirement", "Facultative Anaerobe")
+    elif re.search(r"\bfacultative\s+anaerob", t, flags=re.I):
+        set_field("oxygen requirement", "Facultative Anaerobe")
     elif re.search(r"\baerobic\b", t, flags=re.I):
         set_field("oxygen requirement", "Aerobic")
     elif re.search(r"\banaerobic\b", t, flags=re.I):
@@ -437,23 +522,20 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         if any(ex in lowname for ex in diagnostic_exclude):
             continue
         name = mname.strip().upper()
-        if name in {"XLD", "MACCONKEY", "BLOOD"}:
+        if name in {"XLD","MACCONKEY","BLOOD"}:
             pretty = "XLD Agar" if name == "XLD" else "MacConkey Agar" if name == "MACCONKEY" else "Blood Agar"
         else:
             pretty = mname.strip().title() + " Agar"
-        # keep whitelist spellings when applicable
         canon = next((w for w in MEDIA_WHITELIST if w.lower() == pretty.lower()), pretty)
         if canon not in collected_media:
             collected_media.append(canon)
     if collected_media:
         _set_field_safe(out, "Media Grown On", "; ".join(collected_media))
 
-    # Colony morphology phrase
-    col_match = re.search(r"colon(?:y|ies)\s+(?:are|appear)\s+([^.]+?)(?:\s+on|\.)", t, flags=re.I)
-    if col_match:
-        desc = re.sub(r"\b(with|show|showing|appearing|that|and\s+show|and\s+with)\b", "", col_match.group(1).strip(), flags=re.I)
-        desc = re.sub(r"\s+", " ", desc).strip()
-        _set_field_safe(out, "Colony Morphology", desc.title())
+    # Colony morphology — build from vocabulary
+    cm_value = normalize_cm_phrase(text)
+    if cm_value:
+        _set_field_safe(out, "Colony Morphology", cm_value)
 
     return out
 
@@ -507,28 +589,36 @@ def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[st
             if cv not in ("", None, "Unknown"):
                 out[target] = cv
 
-    # Bridge Haemolysis Type → Haemolysis (adjust here if you prefer a different mapping)
+    # Bridge Haemolysis Type → Haemolysis
     ht = alias.get("haemolysis type"); h = alias.get("haemolysis")
     if ht in out and h in fields:
         tval = out.get(ht, "")
-        if tval in {"Alpha", "Beta", "Gamma"}:
+        if tval in {"Alpha", "Beta"}:
             out[h] = "Positive"
-        elif tval in {"None"}:
-            out[h] = "Negative"
+        elif tval in {"Gamma", "None"}:
+            out[h] = "Variable"  # per your decision
 
-    # Clamp media spellings when possible
+    # Clamp media spellings when possible and de-dupe
     if "Media Grown On" in out and out["Media Grown On"]:
         parts = [p.strip() for p in out["Media Grown On"].split(";") if p.strip()]
         fixed = []
         for p in parts:
             match = next((m for m in MEDIA_WHITELIST if m.lower() == p.lower()), p)
             fixed.append(match)
-        # de-dupe preserving order
         seen = set(); ordered = []
         for x in fixed:
             if x not in seen:
                 ordered.append(x); seen.add(x)
         out["Media Grown On"] = "; ".join(ordered)
+
+    # Final tidy for Colony Morphology (dedupe words across semicolons)
+    if "Colony Morphology" in out and out["Colony Morphology"]:
+        chunks = [c.strip() for c in out["Colony Morphology"].split(";") if c.strip()]
+        seen = set(); cleaned = []
+        for c in chunks:
+            if c not in seen:
+                cleaned.append(c); seen.add(c)
+        out["Colony Morphology"] = "; ".join(cleaned)
 
     return out
 
@@ -570,7 +660,7 @@ def parse_input_free_text(user_text: str, prior_facts: Dict | None = None, db_fi
 
     # Regex enrichment
     regex_ferm = extract_fermentations_regex(user_text, db_fields)
-    regex_bio = extract_biochem_regex(user_text, db_fields)
+    regex_bio  = extract_biochem_regex(user_text, db_fields)
 
     # Merge → normalize
     merged = {}
