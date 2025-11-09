@@ -908,6 +908,24 @@ def parse_input_free_text(
     db_fields = db_fields or []
     cats = _summarize_field_categories(db_fields)
 
+    # 🧠 Optional: load prior feedback as “few-shot learning” examples
+    feedback_examples = []
+    if os.path.exists("parser_feedback.json"):
+        with open("parser_feedback.json", "r", encoding="utf-8") as fb:
+            feedback_examples = json.load(fb)
+            # Only use the last 5 examples
+            feedback_examples = feedback_examples[-5:]
+
+    # Combine them into context prompt
+    feedback_context = ""
+    for f in feedback_examples:
+        feedback_context += f"\nExample failed: {f['name']}\nInput: {f['text']}\nErrors: {f['errors']}\n"
+
+    # Then pass this into your prompt
+    prompt = build_prompt_text(user_text, cats, prior_facts)
+    if feedback_context:
+        prompt = "The following examples show previous mistakes:\n" + feedback_context + "\n\nNow re-parse:\n" + prompt
+    
     # 1) Optional LLM (best-effort, regex still enriches)
     try:
         model_choice = os.getenv("BACTAI_MODEL", "local").lower()
