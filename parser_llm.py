@@ -1,4 +1,4 @@
-# parser_llm.py — Step 1.6 k (Schema-aligned: aliases + suppression + haemolysis bridge)
+# parser_llm.py — Step 1.6 l (Expanded regex coverage & schema-aligned)
 
 import os, json, re
 from typing import Dict, List
@@ -6,17 +6,15 @@ from parser_basic import parse_input_free_text as fallback_parser
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Exact columns from your Excel (used for alignment & suppression)
+# Schema helpers
 # ──────────────────────────────────────────────────────────────────────────────
 def normalize_columns(db_fields: List[str]) -> List[str]:
-    """Return exact DB fields (minus 'Genus') with original casing kept."""
+    """Exact DB fields with original casing, excluding 'Genus'."""
     return [f for f in db_fields if f and f.strip().lower() != "genus"]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Field categorization (lightweight)
-# ──────────────────────────────────────────────────────────────────────────────
 def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
+    """Light categorization (for prompt context only)."""
     cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
     for f in normalize_columns(db_fields):
         n = f.strip()
@@ -24,8 +22,8 @@ def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
         if any(k in l for k in ["gram", "shape", "morphology", "motility", "capsule", "spore", "oxygen requirement", "media grown"]):
             cats["Morphology"].append(n)
         elif any(k in l for k in [
-            "oxidase", "catalase", "urease", "coagulase", "lipase", "indole",
-            "citrate", "vp", "methyl red", "gelatin", "dnase", "nitrate", "h2s", "esculin"
+            "oxidase","catalase","urease","coagulase","lipase","indole",
+            "citrate","vp","methyl red","gelatin","dnase","nitrate","h2s","esculin"
         ]):
             cats["Enzyme"].append(n)
         elif "fermentation" in l or "utilization" in l:
@@ -39,10 +37,7 @@ def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
 # Aliases → exact sheet column names
 # ──────────────────────────────────────────────────────────────────────────────
 def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
-    """
-    Map common phrases/abbreviations to your exact Excel columns.
-    Keys are lowercase.
-    """
+    """Common phrases/abbreviations to your exact Excel columns (keys lowercase)."""
     exact = {f.lower(): f for f in normalize_columns(db_fields)}
     alias: Dict[str, str] = {}
 
@@ -51,7 +46,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
         if t in exact:
             alias[a.lower()] = exact[t]
 
-    # Direct canonical aliases
+    # Canonical test names
     add("mr", "Methyl Red")
     add("methyl red", "Methyl Red")
     add("vp", "VP")
@@ -70,8 +65,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("nitrate", "Nitrate Reduction")
     add("nitrate reduction", "Nitrate Reduction")
     add("lysine decarboxylase", "Lysine Decarboxylase")
-    # Support correct spelling of Ornithine → your sheet's "Ornitihine"
-    add("ornithine decarboxylase", "Ornitihine Decarboxylase")
+    add("ornithine decarboxylase", "Ornitihine Decarboxylase")   # matches your sheet spelling
     add("ornitihine decarboxylase", "Ornitihine Decarboxylase")
     add("arginine dihydrolase", "Arginine dihydrolase")
     add("coagulase", "Coagulase")
@@ -89,60 +83,47 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("media grown on", "Media Grown On")
     add("oxygen requirement", "Oxygen Requirement")
 
-    # Fermentation bases (handled dynamically; keep common fallbacks)
+    # Fermentation bases (e.g., "rhamnose" → "Rhamnose Fermentation")
     for f in normalize_columns(db_fields):
         if f.lower().endswith(" fermentation"):
             base = f[:-12].strip().lower()
-            alias[base] = f  # e.g., "rhamnose" → "Rhamnose Fermentation"
+            alias[base] = f
 
     return alias
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Utility helpers
+# Text utilities
 # ──────────────────────────────────────────────────────────────────────────────
-def _base_name(field: str) -> str:
-    return (
-        field.lower()
-        .replace(" fermentation", "")
-        .replace(" utilization", "")
-        .replace(" test", "")
-        .strip()
-    )
-
 def _normalize_token(s: str) -> str:
     s = s.strip().lower()
     s = s.replace("(", "").replace(")", "")
     s = re.sub(r"[.,;:!?\u2013\u2014\-]+$", "", s)
     return s.strip()
 
+
 def _tokenize_list(s: str) -> List[str]:
+    """Split by ',', 'and', 'or', '&', 'nor'."""
     s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
     return [t.strip() for t in s.split(",") if t.strip()]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Regex enrichment: fermentations + common tests
+# Regex enrichment: fermentations + ONPG + NaCl
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
-    """Map 'ferments X', 'does not ferment Y', signs (+/-), ONPG, NaCl to exact columns."""
     out: Dict[str, str] = {}
     t = text.lower()
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
 
-    # Build base → field map for fermentations
     ferm_fields = [f for f in fields if f.lower().endswith(" fermentation")]
-    base_to_field = {}
-    for f in ferm_fields:
-        base_to_field.setdefault(_base_name(f), set()).add(f)
+    base_to_field = {f[:-12].strip().lower(): f for f in ferm_fields}
 
     def set_field_by_base(base: str, val: str):
         b = _normalize_token(base)
-        # use fermentation column if present; else try alias lookup
         if b in base_to_field:
-            for field in base_to_field[b]:
-                out[field] = val
+            out[base_to_field[b]] = val
         elif b in alias and alias[b] in fields:
             out[alias[b]] = val
 
@@ -164,7 +145,7 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
-    # NEGATIVE after "but not X, Y or Z"
+    # NEGATIVE after "but not X, Y or Z / nor Z"
     for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t):
         for a in _tokenize_list(m.group(1)):
             set_field_by_base(a, "Negative")
@@ -174,7 +155,7 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         a, sign = m.group(1), m.group(2)
         set_field_by_base(a, "Positive" if sign == "+" else "Negative")
 
-    # ONPG (map to exact ONPG column)
+    # ONPG
     if re.search(r"\bonpg\s*(?:test)?\s*(\+|positive)\b", t):
         if "onpg" in alias and alias["onpg"] in fields:
             out[alias["onpg"]] = "Positive"
@@ -182,66 +163,84 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         if "onpg" in alias and alias["onpg"] in fields:
             out[alias["onpg"]] = "Negative"
 
-    # NaCl tolerance → "NaCl Tolerant (>=6%)"
-    if re.search(r"\bgrows\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+    # NaCl tolerance phrases (in / up to … % NaCl)
+    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Positive"
-    if re.search(r"\bno\s+growth\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+    if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Negative"
-
-
-    return out
-
-
-def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
-    """Generic enzyme/other tests → exact columns using aliases."""
-    out: Dict[str, str] = {}
-    t = text.lower()
-    fields = normalize_columns(db_fields)
-    alias = build_alias_map(db_fields)
-
-    def set_simple(test_key: str, val: str):
-        k = test_key.lower()
-        target = alias.get(k) or (test_key if test_key in fields else None)
-        if target in fields:
-            out[target] = val
-
-    # Common tests (+ / - / weakly positive)
-    targets = [
-        "catalase","oxidase","coagulase","urease","lipase","indole",
-        "citrate","vp","methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis"
-    ]
-    for test in targets:
-        pos = rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected)\b"
-        neg = rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected)\b"
-        var = rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b"
-        if re.search(pos, t):
-            set_simple(test, "Positive")
-        elif re.search(neg, t):
-            set_simple(test, "Negative")
-        elif re.search(var, t):
-            set_simple(test, "Variable")
-
-    # Haemolysis type → exact column
-    if "haemolysis type" in alias:
-        if re.search(r"\b(beta|β)[-\s]?haem", t):
-            out[alias["haemolysis type"]] = "Beta"
-        elif re.search(r"\b(alpha|α)[-\s]?haem", t):
-            out[alias["haemolysis type"]] = "Alpha"
-        elif re.search(r"\b(gamma|γ)[-\s]?haem", t):
-            out[alias["haemolysis type"]] = "Gamma"
-
-    # Growth Temperature (single numeric)
-    m = re.search(r"\bgrows\s+at\s+([0-9]{2,3})\s*°?\s*c", t)
-    if m and "growth temperature" in alias:
-        out[alias["growth temperature"]] = m.group(1)
 
     return out
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Prompt builders (LLM step is minimal; regex handles most)
+# Regex enrichment: enzyme/other tests, capsule, haemolysis, growth temp
+# ──────────────────────────────────────────────────────────────────────────────
+def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
+    out: Dict[str, str] = {}
+    t = text.lower()
+    fields = normalize_columns(db_fields)
+    alias = build_alias_map(db_fields)
+
+    def set_field(key_like: str, val: str):
+        target = alias.get(key_like.lower(), key_like)
+        if target in fields:
+            out[target] = val
+
+    # Generic biochemical (+ / - / weakly positive)
+    generic_targets = [
+        "catalase","oxidase","coagulase","urease","lipase","indole",
+        "citrate","vp","methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis"
+    ]
+    for test in generic_targets:
+        if re.search(rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected)\b", t):
+            set_field(test, "Positive")
+        elif re.search(rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected)\b", t):
+            set_field(test, "Negative")
+        elif re.search(rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b", t):
+            set_field(test, "Variable")
+
+    # Phrase variants
+    if re.search(r"\breduces\s+nitrate\b", t):
+        set_field("nitrate", "Positive")
+    if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t):
+        set_field("nitrate", "Negative")
+    if re.search(r"\bproduces\s+h\s*2\s*s\b", t):
+        set_field("h2s", "Positive")
+    if re.search(r"\bh\s*2\s*s\s+negative\b", t):
+        set_field("h2s", "Negative")
+    if re.search(r"\bgelatin\s+liquefaction\s+(?:\+|positive)\b", t):
+        set_field("gelatin", "Positive")
+    if re.search(r"\besculin\s+hydrolysis\s+(?:\+|positive)\b", t):
+        set_field("esculin hydrolysis", "Positive")
+
+    # Capsule
+    if re.search(r"\b(capsulated|encapsulated)\b", t):
+        set_field("capsule", "Positive")
+    if re.search(r"\bnon[-\s]?capsulated\b", t):
+        set_field("capsule", "Negative")
+
+    # Haemolysis type → exact column
+    if re.search(r"\b(beta|β)[-\s]?haem", t):
+        set_field("haemolysis type", "Beta")
+    elif re.search(r"\b(alpha|α)[-\s]?haem", t):
+        set_field("haemolysis type", "Alpha")
+    elif re.search(r"\b(gamma|γ)[-\s]?haem", t):
+        set_field("haemolysis type", "Gamma")
+
+    # Growth Temperature:
+    # - If "grows at X °C" appears, set numeric X.
+    # - If "no growth at Y °C" appears, DO NOT set the column (we keep numeric semantics).
+    for m in re.finditer(r"\bgrows\s+at\s+([0-9]{2,3})\s*°?\s*c", t):
+        temp_num = m.group(1)
+        set_field("growth temperature", temp_num)
+
+    return out
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Prompt builders (LLM is optional; regex handles most)
 # ──────────────────────────────────────────────────────────────────────────────
 def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
@@ -260,6 +259,7 @@ def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
         {"role": "user", "content": f"Previous facts:\n{prior}\nObservation:\n{user_text}"},
     ]
 
+
 def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
     return (
@@ -271,20 +271,14 @@ def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=No
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Normalization & post-processing to your schema
+# Normalization to your schema (drop unknowns, bridge haemolysis)
 # ──────────────────────────────────────────────────────────────────────────────
-def normalize_to_schema(d: Dict[str, str], db_fields: List[str]) -> Dict[str, str]:
-    """
-    - Map any LLM keys/variants to exact sheet columns (via aliases)
-    - Drop keys not present in the sheet
-    - Add 'Haemolysis' = Positive when 'Haemolysis Type' is present
-    """
+def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[str, str]:
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
     out: Dict[str, str] = {}
 
-    # 1) Key normalization to exact columns
-    for k, v in d.items():
+    for k, v in (parsed or {}).items():
         kk = k.strip()
         key_l = kk.lower()
         target = None
@@ -297,7 +291,7 @@ def normalize_to_schema(d: Dict[str, str], db_fields: List[str]) -> Dict[str, st
         if target in fields and v not in (None, "", "Unknown"):
             out[target] = v
 
-    # 2) Bridge: Haemolysis Type → Haemolysis: Positive
+    # Haemolysis Type → Haemolysis: Positive
     ht = alias.get("haemolysis type")
     h = alias.get("haemolysis")
     if ht in out and out[ht] not in ("", "Unknown", None) and h in fields:
@@ -307,7 +301,7 @@ def normalize_to_schema(d: Dict[str, str], db_fields: List[str]) -> Dict[str, st
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# MAIN ENTRY POINT (imported by app_chat.py)
+# MAIN ENTRY POINT
 # ──────────────────────────────────────────────────────────────────────────────
 def parse_input_free_text(
     user_text: str,
@@ -320,7 +314,7 @@ def parse_input_free_text(
     db_fields = db_fields or []
     cats = summarize_field_categories(db_fields)
 
-    # Step 1: LLM (optional)
+    # Step 1: (optional) LLM parse — we still try, but regex will enrich heavily
     try:
         model_choice = os.getenv("BACTAI_MODEL", "local").lower()
         if model_choice == "gpt":
@@ -333,7 +327,7 @@ def parse_input_free_text(
                 temperature=0.2,
                 response_format={"type": "json_object"},
             )
-            parsed = json.loads(resp.choices[0].message.content)
+            llm_parsed = json.loads(resp.choices[0].message.content)
         else:
             import ollama
             prompt = build_prompt_text(user_text, cats, prior_facts)
@@ -342,17 +336,17 @@ def parse_input_free_text(
                 messages=[{"role": "user", "content": prompt}],
             )
             m = re.search(r"\{.*\}", out["message"]["content"], re.S)
-            parsed = json.loads(m.group(0)) if m else {}
+            llm_parsed = json.loads(m.group(0)) if m else {}
     except Exception as e:
         print("⚠️ LLM parser failed — fallback:", e)
-        parsed = fallback_parser(user_text, prior_facts)
+        llm_parsed = fallback_parser(user_text, prior_facts)
 
-    # Step 2: Regex enrichment (fermentations + core tests) to exact columns
+    # Step 2: Regex enrichment to exact columns
     regex_ferm = extract_fermentations_regex(user_text, db_fields)
     regex_bio = extract_biochem_regex(user_text, db_fields)
 
     merged = {}
-    merged.update(parsed or {})
+    merged.update(llm_parsed or {})
     merged.update(regex_ferm)
     merged.update(regex_bio)
 
