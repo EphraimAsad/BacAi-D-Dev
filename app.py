@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 import re
 import os
+import json, os
 from fpdf import FPDF
 from datetime import datetime
 from engine import BacteriaIdentifier
+from parser_llm import parse_input_free_text
 
 # --- CONFIG ---
 st.set_page_config(page_title="BactAI-D Assistant", layout="wide")
@@ -150,10 +152,6 @@ if st.sidebar.button("🔍 Identify"):
                 columns=["Genus", "Confidence", "True Confidence (All Tests)", "Reasoning", "Next Tests", "Extra Notes"],
             )
             st.session_state.results = results
-import streamlit as st
-import json, os
-from parser_llm import parse_input_free_text
-
 # Sidebar section
 st.sidebar.markdown("### 🧪 Gold Standard Test Suite")
 
@@ -277,5 +275,6 @@ if not st.session_state.results.empty:
 # --- FOOTER ---
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
+
 
 
