@@ -1130,3 +1130,59 @@ def analyze_feedback_and_learn(feedback_path="parser_feedback.json", memory_path
         json.dump(memory, mf, indent=2)
 
     print(f"🧠 Learned {len(rule_suggestions)} new parser hints.")
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧬 Step 3 — Self-Updating Regex Heuristic Patcher
+# ──────────────────────────────────────────────────────────────────────────────
+
+def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="parser_llm.py"):
+    """
+    Reads parser_memory.json for auto_heuristics and injects new regex rules
+    into parser_llm.py automatically. 
+    """
+    if not os.path.exists(memory_path):
+        print("⚠️ No memory file found; skipping regex update.")
+        return
+
+    try:
+        with open(memory_path, "r", encoding="utf-8") as f:
+            memory = json.load(f)
+    except Exception as e:
+        print(f"⚠️ Failed to load memory file: {e}")
+        return
+
+    auto_heuristics = memory.get("auto_heuristics", {})
+    if not auto_heuristics:
+        print("ℹ️ No new regex heuristics to apply.")
+        return
+
+    try:
+        with open(parser_file, "r", encoding="utf-8") as f:
+            code = f.read()
+
+        # Inject new patterns into the regex section between specific tags
+        marker_start = "# === AUTO-LEARNED PATTERNS START ==="
+        marker_end = "# === AUTO-LEARNED PATTERNS END ==="
+
+        pattern_block = [marker_start, "\n"]
+        for field, rule in auto_heuristics.items():
+            comment = f"# Learned rule for {field}: {rule['rule']} (seen {rule['count']} times)\n"
+            pattern_block.append(comment)
+        pattern_block.append(marker_end)
+
+        # Replace old block or append if missing
+        if marker_start in code and marker_end in code:
+            code = re.sub(
+                f"{re.escape(marker_start)}.*?{re.escape(marker_end)}",
+                "\n".join(pattern_block),
+                code,
+                flags=re.S,
+            )
+        else:
+            code += "\n\n" + "\n".join(pattern_block)
+
+        with open(parser_file, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        print(f"🧠 Updated {parser_file} with {len(auto_heuristics)} learned regex heuristics.")
+    except Exception as e:
+        print(f"❌ Failed to update regex section: {e}")
