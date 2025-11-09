@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 import re
 import os
+import json
 from fpdf import FPDF
 from datetime import datetime
+
 from engine import BacteriaIdentifier
+from parser_llm import parse_input_free_text  # <-- for Gold Spec Tests
 
 # --- CONFIG ---
 st.set_page_config(page_title="BactAI-D Assistant", layout="wide")
@@ -52,6 +55,10 @@ if "user_input" not in st.session_state:
     st.session_state.user_input = {}
 if "results" not in st.session_state:
     st.session_state.results = pd.DataFrame()
+if "gold_results" not in st.session_state:
+    st.session_state.gold_results = None
+if "gold_summary" not in st.session_state:
+    st.session_state.gold_summary = None
 
 # --- RESET TRIGGER HANDLER (before widgets are created) ---
 if "reset_trigger" in st.session_state and st.session_state["reset_trigger"]:
@@ -59,7 +66,7 @@ if "reset_trigger" in st.session_state and st.session_state["reset_trigger"]:
         st.session_state.user_input[key] = "Unknown"
 
     for key in list(st.session_state.keys()):
-        if key not in ["user_input", "results", "reset_trigger"]:
+        if key not in ["user_input", "results", "reset_trigger", "gold_results", "gold_summary"]:
             if isinstance(st.session_state[key], list):
                 st.session_state[key] = []
             else:
@@ -128,6 +135,66 @@ if st.sidebar.button("🔄 Reset All Inputs"):
     st.session_state["reset_trigger"] = True
     st.rerun()
 
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧪 GOLD SPEC TESTS — sidebar controls
+# ──────────────────────────────────────────────────────────────────────────────
+with st.sidebar.expander("🧪 Gold Spec Tests", expanded=False):
+    # Run tests
+    if st.button("▶️ Run Gold Spec Tests"):
+        try:
+            # Load gold tests file
+            with open("gold_tests.json", "r", encoding="utf-8") as f:
+                tests = json.load(f)
+
+            # DB fields to clamp outputs to your schema
+            db_fields = [c for c in db.columns if c.strip().lower() != "genus"]
+
+            results = []
+            feedback = []
+            passed = 0
+
+            for case in tests:
+                parsed = parse_input_free_text(case["input"], db_fields=db_fields)
+                expected = case.get("expected", {})
+                mismatched = []
+
+                # Compare only expected keys (gold standard)
+                for key, exp_val in expected.items():
+                    got_val = parsed.get(key)
+                    if got_val != exp_val:
+                        mismatched.append({"field": key, "got": got_val, "expected": exp_val})
+
+                if mismatched:
+                    results.append({"name": case.get("name", "Unnamed Case"), "status": "❌", "mismatches": mismatched, "parsed": parsed, "expected": expected})
+                    feedback.append({"name": case.get("name", "Unnamed Case"), "text": case["input"], "errors": mismatched})
+                else:
+                    results.append({"name": case.get("name", "Unnamed Case"), "status": "✅", "mismatches": [], "parsed": parsed, "expected": expected})
+                    passed += 1
+
+            # Save feedback for the parser’s learning loop
+            with open("parser_feedback.json", "w", encoding="utf-8") as fb:
+                json.dump(feedback, fb, indent=2)
+
+            st.session_state.gold_results = results
+            st.session_state.gold_summary = (passed, len(tests))
+            st.success("Gold Spec Tests finished.")
+
+        except FileNotFoundError:
+            st.error("gold_tests.json not found in repo root. Please add it and try again.")
+        except Exception as e:
+            st.error(f"Gold Test failed to run: {e}")
+
+    # Clear learning memory
+    if st.button("🧹 Clear Learning Memory"):
+        try:
+            if os.path.exists("parser_feedback.json"):
+                os.remove("parser_feedback.json")
+                st.success("Cleared feedback memory.")
+            else:
+                st.info("No feedback file found.")
+        except Exception as e:
+            st.error(f"Could not clear memory: {e}")
+
 # --- IDENTIFY BUTTON ---
 if st.sidebar.button("🔍 Identify"):
     with st.spinner("Analyzing results..."):
@@ -164,6 +231,21 @@ if not st.session_state.results.empty:
             st.markdown(f"**True Confidence (All Tests):** {row['True Confidence (All Tests)']}")
             if row["Extra Notes"]:
                 st.markdown(f"**Notes:** {row['Extra Notes']}")
+
+# --- GOLD TEST RESULTS DISPLAY (main area) ---
+if st.session_state.gold_results is not None:
+    passed, total = st.session_state.gold_summary or (0, 0)
+    st.markdown("## 🧪 Gold Test Results")
+    st.markdown(f"**Summary:** {passed}/{total} passed")
+    for r in st.session_state.gold_results:
+        if r["status"] == "✅":
+            st.markdown(f"**{r['name']}** — ✅ Passed all checks")
+        else:
+            st.markdown(f"**{r['name']}** — ❌ Mismatches:")
+            for m in r["mismatches"]:
+                st.markdown(f"- **{m['field']}**: got `{m['got']}`, expected `{m['expected']}`")
+            with st.expander("Show parsed vs expected"):
+                st.code(json.dumps({"parsed": r["parsed"], "expected": r["expected"]}, indent=2), language="json")
 
 # --- PDF EXPORT ---
 def export_pdf(results_df, user_input):
@@ -213,4 +295,3 @@ if not st.session_state.results.empty:
 # --- FOOTER ---
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
-
