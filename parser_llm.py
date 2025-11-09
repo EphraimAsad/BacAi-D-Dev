@@ -34,7 +34,7 @@
 #   run_gold_tests()  # CLI:  python parser_llm.py --test
 #
 # NOTE: Streamlit is imported only inside the sidebar helper to avoid hard deps.
-
+import ollama
 import difflib
 import os, re, json, sys, math
 from typing import Dict, List, Set, Tuple, Optional
