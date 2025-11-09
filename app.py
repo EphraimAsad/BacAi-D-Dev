@@ -150,6 +150,70 @@ if st.sidebar.button("🔍 Identify"):
                 columns=["Genus", "Confidence", "True Confidence (All Tests)", "Reasoning", "Next Tests", "Extra Notes"],
             )
             st.session_state.results = results
+import streamlit as st
+import json, os
+from parser_llm import parse_input_free_text
+
+# Sidebar section
+st.sidebar.markdown("### 🧪 Gold Standard Test Suite")
+
+# Button to run tests
+if st.sidebar.button("Run Gold Spec Tests"):
+    st.sidebar.write("Running validation... ⏳")
+    try:
+        # Load gold tests
+        with open("gold_tests.json", "r", encoding="utf-8") as f:
+            tests = json.load(f)
+
+        db_fields = [
+            "Gram Stain","Shape","Motility","Oxidase","Catalase","Indole","Urease","Citrate","Methyl Red","VP",
+            "DNase","Gelatin Hydrolysis","Esculin Hydrolysis","Nitrate Reduction","H2S","Oxygen Requirement",
+            "Growth Temperature","Media Grown On","Colony Morphology","Haemolysis","Haemolysis Type","Coagulase",
+            "Lysine Decarboxylase","Ornitihine Decarboxylase","Arginine dihydrolase","ONPG",
+            "NaCl Tolerant (>=6%)","Lipase Test","Lactose Fermentation","Glucose Fermentation","Sucrose Fermentation",
+            "Maltose Fermentation","Mannitol Fermentation","Xylose Fermentation","Arabinose Fermentation","Rhamnose Fermentation",
+            "Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation"
+        ]
+
+        results = []
+        feedback = []
+        passed = 0
+
+        for case in tests:
+            parsed = parse_input_free_text(case["input"], db_fields=db_fields)
+            expected = case["expected"]
+            mismatched = []
+            for key, exp_val in expected.items():
+                val = parsed.get(key)
+                if val != exp_val:
+                    mismatched.append({"field": key, "got": val, "expected": exp_val})
+
+            if mismatched:
+                results.append({"name": case["name"], "status": "❌", "mismatches": mismatched})
+                feedback.append({"name": case["name"], "text": case["input"], "errors": mismatched})
+            else:
+                results.append({"name": case["name"], "status": "✅", "mismatches": []})
+                passed += 1
+
+        # Save feedback to file for the "learning" loop
+        with open("parser_feedback.json", "w", encoding="utf-8") as fb:
+            json.dump(feedback, fb, indent=2)
+
+        # Display summary
+        st.sidebar.success(f"{passed}/{len(tests)} passed ✅")
+        st.markdown("## 🧪 Gold Test Results")
+        for r in results:
+            if r["status"] == "✅":
+                st.markdown(f"**{r['name']}** — ✅ Passed all checks")
+            else:
+                st.markdown(f"**{r['name']}** — ❌ Mismatches:")
+                for m in r["mismatches"]:
+                    st.markdown(
+                        f"- **{m['field']}**: got `{m['got']}`, expected `{m['expected']}`"
+                    )
+
+    except Exception as e:
+        st.error(f"Gold Test failed to run: {e}")
 
 # --- DISPLAY RESULTS ---
 if not st.session_state.results.empty:
@@ -213,4 +277,5 @@ if not st.session_state.results.empty:
 # --- FOOTER ---
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
+
 
