@@ -1,4 +1,4 @@
-# parser_llm.py — Step 1.6 n (Unicode/whitespace normalization, growth fix, haemolysis/NaCl/decars/esculin/oxygen)
+# parser_llm.py — Step 1.6 n+ (Unicode normalization, haemolysis, NaCl, decarboxylases, esculin, growth fixes)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -274,6 +274,21 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         set_field("oxygen requirement", "Facultative")
     elif re.search(r"\bmicroaerophil(ic|e)\b", t, flags=re.I):
         set_field("oxygen requirement", "Microaerophilic")
+
+    # Decarboxylases / dihydrolase explicit capture
+    decarbox_patterns = [
+        ("lysine decarboxylase", r"\blysine\s+decarboxylase\s+(?:test\s+)?(\+|positive)\b", "Positive"),
+        ("lysine decarboxylase", r"\blysine\s+decarboxylase\s+(?:test\s+)?(\-|negative)\b", "Negative"),
+        ("ornithine decarboxylase", r"\bornithine\s+decarboxylase\s+(?:test\s+)?(\+|positive)\b", "Positive"),
+        ("ornithine decarboxylase", r"\bornithine\s+decarboxylase\s+(?:test\s+)?(\-|negative)\b", "Negative"),
+        ("ornitihine decarboxylase", r"\bornitihine\s+decarboxylase\s+(?:test\s+)?(\+|positive)\b", "Positive"),
+        ("ornitihine decarboxylase", r"\bornitihine\s+decarboxylase\s+(?:test\s+)?(\-|negative)\b", "Negative"),
+        ("arginine dihydrolase", r"\barginine\s+dihydrolase\s+(?:test\s+)?(\+|positive)\b", "Positive"),
+        ("arginine dihydrolase", r"\barginine\s+dihydrolase\s+(?:test\s+)?(\-|negative)\b", "Negative"),
+    ]
+    for key, pat, val in decarbox_patterns:
+        if re.search(pat, t, flags=re.I):
+            set_field(key, val)
 
     # Growth Temperature:
     # - Only set when phrase includes "grows at" (avoid false hit from "no growth at X °C")
