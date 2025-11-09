@@ -42,6 +42,17 @@ st.markdown(
     "I’ll parse it, run the BactAI-D engine, and explain the result."
 )
 
+# Confidence explainer (new)
+st.markdown(
+    """
+**How to read the scores**
+
+- **Confidence** – Based **only on the tests you entered**. It’s the proportion of matches across the fields you actually provided (Unknowns are ignored).
+- **True Confidence (All Tests)** – The same internal score scaled by **all possible fields in the database**.  
+  This shows how strong the match would be **if every field were filled**. It often reads lower when many inputs are Unknown.
+"""
+)
+
 # ---- SESSION STATE ----
 if "facts" not in st.session_state:
     st.session_state.facts = {}
@@ -77,10 +88,8 @@ with st.sidebar.expander("🧬 Supported Tests (current database fields)", expan
     morph_stain = [f for f in fields if ("Gram" in f) or ("Shape" in f) or ("Colony" in f)]
     enzyme_react = [f for f in fields if ("Fermentation" in f) or re.search(r"ase\b", f, re.IGNORECASE)]
     hemo = [f for f in fields if "Haemolysis" in f or "Hemolysis" in f]
-    growth_other = [
-        f for f in fields
-        if f not in set(morph_stain + enzyme_react + hemo)
-    ]
+    used = set(morph_stain + enzyme_react + hemo)
+    growth_other = [f for f in fields if f not in used]
 
     if morph_stain:
         st.markdown("**Morphology / Stain**  ")
@@ -152,3 +161,10 @@ if user_msg:
 
     # 6) Show assistant message
     st.chat_message("assistant").markdown(reply)
+
+# ---- FOOTER ----
+st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown(
+    "<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>",
+    unsafe_allow_html=True
+)
