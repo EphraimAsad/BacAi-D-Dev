@@ -1,12 +1,10 @@
-# parser_llm.py — Step 1.6 g (Hybrid LLM + Regex Parser with “but not” support)
-
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
 
 
 # ==========================================================
-# Helper: categorize database fields
+#  Field categorization
 # ==========================================================
 def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
     cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
@@ -27,10 +25,10 @@ def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
 
 
 # ==========================================================
-# Helpers for deterministic parsing
+#  Utility helpers
 # ==========================================================
 def _base_name(field: str) -> str:
-    """Normalize DB field to its root analyte name."""
+    """Reduce field to analyte root name."""
     return (
         field.lower()
         .replace(" fermentation", "")
@@ -47,33 +45,31 @@ def _tokenize_analyte_list(s: str) -> List[str]:
 
 
 # ==========================================================
-# Regex rule-based extractor (fermentations + shorthands)
+#  Deterministic pattern extractor
 # ==========================================================
 def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Dict[str, str]:
+    """Extract fermentation/utilization patterns, shorthand, ONPG, NaCl."""
     out: Dict[str, str] = {}
     t = text.lower()
 
-    # Build base → field mapping
+    # base → field map
     base_to_field = {}
     for f in fermentation_fields:
-        base = _base_name(f)
-        base_to_field.setdefault(base, set()).add(f)
+        base_to_field.setdefault(_base_name(f), set()).add(f)
 
-    def set_val(analyte_base: str, val: str):
-        if analyte_base in base_to_field:
-            for field in base_to_field[analyte_base]:
+    def set_val(base: str, val: str):
+        if base in base_to_field:
+            for field in base_to_field[base]:
                 out[field] = val
 
-    # 1️⃣ POSITIVE lists after "ferments"/"utilizes"
+    # 1️⃣ positive after "ferments"/"utilizes"
     for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t):
-        span = m.group(1)
-        # stop if "but not ..." follows
-        span = re.split(r"\bbut\s+not\b", span)[0]
+        span = re.split(r"\bbut\s+not\b", m.group(1))[0]
         for a in _tokenize_analyte_list(span):
             b = a.replace("(", "").replace(")", "").strip().lower()
             set_val(b, "Positive")
 
-    # 2️⃣ NEGATIVE common phrases
+    # 2️⃣ negatives via common phrases
     neg_pats = [
         r"(?:does\s+not|doesn't)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
         r"cannot\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
@@ -86,23 +82,25 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
                 b = a.replace("(", "").replace(")", "").strip().lower()
                 set_val(b, "Negative")
 
-    # 3️⃣ NEGATIVE via "but not X, Y"
-    for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&]+)", t):
+    # 3️⃣ negatives after "but not X, Y or Z"
+    for m in re.finditer(
+        r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandor]+)", t
+    ):
         for a in _tokenize_analyte_list(m.group(1)):
             b = a.replace("(", "").replace(")", "").strip().lower()
             set_val(b, "Negative")
 
-    # 4️⃣ Shorthand "lactose – / rhamnose +"
+    # 4️⃣ shorthand  lactose -, rhamnose +
     for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t):
         a, sign = m.group(1).lower(), m.group(2)
         set_val(a, "Positive" if sign == "+" else "Negative")
 
-    # 5️⃣ "non-lactose fermenting/fermenter"
+    # 5️⃣ non-lactose fermenting / fermenter
     for m in re.finditer(r"\bnon[-\s]?([a-z0-9\-]+)\s+ferment(?:er|ing)?\b", t):
         a = m.group(1).lower()
         set_val(a, "Negative")
 
-    # 6️⃣ ONPG explicit
+    # 6️⃣ ONPG
     if re.search(r"\bonpg\s*(?:test)?\s*(\+|positive)\b", t):
         out["ONPG Test"] = "Positive"
     elif re.search(r"\bonpg\s*(?:test)?\s*(\-|negative)\b", t):
@@ -118,7 +116,7 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
 
 
 # ==========================================================
-# Prompt builders for the LLM step
+#  Prompt builders for the LLM stage
 # ==========================================================
 def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
@@ -128,8 +126,7 @@ def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     other = ", ".join(cats["Other"][:10])
     system = (
         "You parse microbiology observations into structured results. "
-        "Focus on morphology, enzyme, and growth traits. "
-        "Fermentation results are handled separately by regex rules. "
+        "Focus on morphology, enzyme, and growth traits; fermentation handled separately. "
         "Return JSON; unmentioned fields='Unknown'.\n"
         f"Morphology: {morph}\nEnzyme: {enz}\nFermentation examples: {ferm}\nOther: {other}"
     )
@@ -150,7 +147,7 @@ def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=No
 
 
 # ==========================================================
-# MAIN ENTRY POINT  — what app_chat.py imports
+#  MAIN ENTRY POINT  (imported by app_chat.py)
 # ==========================================================
 def parse_input_free_text(
     user_text: str,
@@ -164,7 +161,7 @@ def parse_input_free_text(
     db_fields = [f for f in (db_fields or []) if f.lower() != "genus"]
     cats = summarize_field_categories(db_fields)
 
-    # --- Step 1 : LLM parsing (fallback-safe)
+    # --- Step 1 : LLM parsing
     try:
         model_choice = os.getenv("BACTAI_MODEL", "local").lower()
         if model_choice == "gpt":
@@ -191,7 +188,7 @@ def parse_input_free_text(
         print("⚠️ LLM parser failed — fallback:", e)
         parsed = fallback_parser(user_text, prior_facts)
 
-    # --- Step 2 : Deterministic regex add-ons
+    # --- Step 2 : deterministic regex add-ons
     regex_hits = extract_fermentations_regex(user_text, cats["Fermentation"])
     parsed.update(regex_hits)
 
