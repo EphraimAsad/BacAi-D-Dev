@@ -37,11 +37,28 @@ def _base_name(field: str) -> str:
         .strip()
     )
 
+def _normalize_analyte_token(s: str) -> str:
+    """
+    Normalize an analyte token so it matches DB bases:
+      - lowercase
+      - remove parentheses
+      - strip trailing punctuation (. , ; : ! ?)
+      - trim spaces
+    """
+    s = s.strip().lower()
+    s = s.replace("(", "").replace(")", "")
+    s = re.sub(r"[.,;:!?\u2013\u2014\-]+$", "", s)  # strip trailing punctuation/dashes
+    s = s.strip()
+    return s
 
 def _tokenize_analyte_list(s: str) -> List[str]:
-    """Split 'glucose and sucrose, not lactose' → ['glucose','sucrose','lactose']"""
-    s = re.sub(r"\s*(?:,|and|or|&)\s*", ",", s.strip(), flags=re.I)
-    return [t.strip() for t in s.split(",") if t.strip()]
+    """
+    Split 'glucose and sucrose, not lactose or rhamnose' → ['glucose','sucrose','lactose','rhamnose']
+    Treat ',', 'and', 'or', '&', 'nor' as separators.
+    """
+    s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
+    tokens = [t.strip() for t in s.split(",") if t.strip()]
+    return tokens
 
 
 # ==========================================================
@@ -66,7 +83,7 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
     for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t):
         span = re.split(r"\bbut\s+not\b", m.group(1))[0]
         for a in _tokenize_analyte_list(span):
-            b = a.replace("(", "").replace(")", "").strip().lower()
+            b = _normalize_analyte_token(a)
             set_val(b, "Positive")
 
     # 2️⃣ negatives via common phrases
@@ -79,26 +96,28 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
     for pat in neg_pats:
         for m in re.finditer(pat, t):
             for a in _tokenize_analyte_list(m.group(1)):
-                b = a.replace("(", "").replace(")", "").strip().lower()
+                b = _normalize_analyte_token(a)
                 set_val(b, "Negative")
 
-    # 3️⃣ negatives after "but not X, Y or Z"
+    # 3️⃣ negatives after "but not X, Y or Z / nor Z"
     for m in re.finditer(
-        r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandor]+)", t
+        r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t
     ):
         for a in _tokenize_analyte_list(m.group(1)):
-            b = a.replace("(", "").replace(")", "").strip().lower()
+            b = _normalize_analyte_token(a)
             set_val(b, "Negative")
 
     # 4️⃣ shorthand  lactose -, rhamnose +
     for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t):
-        a, sign = m.group(1).lower(), m.group(2)
-        set_val(a, "Positive" if sign == "+" else "Negative")
+        a, sign = m.group(1), m.group(2)
+        b = _normalize_analyte_token(a)
+        set_val(b, "Positive" if sign == "+" else "Negative")
 
     # 5️⃣ non-lactose fermenting / fermenter
     for m in re.finditer(r"\bnon[-\s]?([a-z0-9\-]+)\s+ferment(?:er|ing)?\b", t):
-        a = m.group(1).lower()
-        set_val(a, "Negative")
+        a = m.group(1)
+        b = _normalize_analyte_token(a)
+        set_val(b, "Negative")
 
     # 6️⃣ ONPG
     if re.search(r"\bonpg\s*(?:test)?\s*(\+|positive)\b", t):
