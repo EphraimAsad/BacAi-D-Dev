@@ -4,7 +4,8 @@ pandas>=2.2
 fpdf2>=2.7
 openpyxl>=3.1
 openai>=2.7.1     # GPT option
-ollama>=0.3.0       # Local option (okay if not used; app falls back)
+ollama     # Local option (okay if not used; app falls back)
+
 
 
 
