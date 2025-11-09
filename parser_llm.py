@@ -15,7 +15,9 @@ def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
             continue
         if any(k in l for k in ["gram", "shape", "morphology", "motility", "capsule", "spore"]):
             cats["Morphology"].append(n)
-        elif any(k in l for k in ["oxidase", "catalase", "urease", "coagulase", "lipase", "test"]):
+        elif any(k in l for k in ["oxidase", "catalase", "urease", "coagulase",
+                                  "lipase", "indole", "citrate", "vp", "mr",
+                                  "gelatin", "starch", "nitrate", "h2s", "test"]):
             cats["Enzyme"].append(n)
         elif "fermentation" in l or "utilization" in l:
             cats["Fermentation"].append(n)
@@ -28,7 +30,6 @@ def summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
 #  Utility helpers
 # ==========================================================
 def _base_name(field: str) -> str:
-    """Reduce field to analyte root name."""
     return (
         field.lower()
         .replace(" fermentation", "")
@@ -38,32 +39,64 @@ def _base_name(field: str) -> str:
     )
 
 def _normalize_analyte_token(s: str) -> str:
-    """
-    Normalize an analyte token so it matches DB bases:
-      - lowercase
-      - remove parentheses
-      - strip trailing punctuation (. , ; : ! ?)
-      - trim spaces
-    """
     s = s.strip().lower()
     s = s.replace("(", "").replace(")", "")
-    s = re.sub(r"[.,;:!?\u2013\u2014\-]+$", "", s)  # strip trailing punctuation/dashes
-    s = s.strip()
-    return s
+    s = re.sub(r"[.,;:!?\u2013\u2014\-]+$", "", s)
+    return s.strip()
 
 def _tokenize_analyte_list(s: str) -> List[str]:
-    """
-    Split 'glucose and sucrose, not lactose or rhamnose' → ['glucose','sucrose','lactose','rhamnose']
-    Treat ',', 'and', 'or', '&', 'nor' as separators.
-    """
     s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
-    tokens = [t.strip() for t in s.split(",") if t.strip()]
-    return tokens
+    return [t.strip() for t in s.split(",") if t.strip()]
 
 
 # ==========================================================
 #  Deterministic pattern extractor
 # ==========================================================
+def extract_patterns_regex(text: str, fields: List[str]) -> Dict[str, str]:
+    """General biochemical pattern extractor."""
+    out: Dict[str, str] = {}
+    t = text.lower()
+
+    # 1️⃣ generic enzyme test positives / negatives
+    enzyme_targets = [
+        "catalase", "oxidase", "coagulase", "urease", "lipase", "indole",
+        "citrate", "vp", "mr", "gelatin", "starch", "nitrate", "h2s"
+    ]
+    for test in enzyme_targets:
+        pos_pat = rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected)\b"
+        neg_pat = rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected)\b"
+        var_pat = rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b"
+        if re.search(pos_pat, t):
+            out[f"{test.capitalize()}"] = "Positive"
+        elif re.search(neg_pat, t):
+            out[f"{test.capitalize()}"] = "Negative"
+        elif re.search(var_pat, t):
+            out[f"{test.capitalize()}"] = "Variable"
+
+    # 2️⃣ Haemolysis type
+    if re.search(r"\b(beta|β)[-\s]?haem", t):
+        out["Haemolysis Type"] = "Beta"
+    elif re.search(r"\b(alpha|α)[-\s]?haem", t):
+        out["Haemolysis Type"] = "Alpha"
+    elif re.search(r"\b(gamma|γ)[-\s]?haem", t):
+        out["Haemolysis Type"] = "Gamma"
+
+    # 3️⃣ NaCl tolerance
+    if re.search(r"\bgrows\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+        out["NaCl Tolerance"] = "Positive"
+    if re.search(r"\bno\s+growth\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+        out["NaCl Tolerance"] = "Negative"
+
+    # 4️⃣ Growth temperature extraction
+    for m in re.finditer(r"grows\s+at\s+([0-9]{2,3})\s*°?\s*c", t):
+        out["Growth Temperature"] = m.group(1)
+    if re.search(r"no\s+growth\s+at\s+([0-9]{2,3})", t):
+        # optional secondary temp field if needed
+        out["No Growth Temperature"] = re.findall(r"no\s+growth\s+at\s+([0-9]{2,3})", t)[0]
+
+    return out
+
+
 def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Dict[str, str]:
     """Extract fermentation/utilization patterns, shorthand, ONPG, NaCl."""
     out: Dict[str, str] = {}
@@ -83,8 +116,7 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
     for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t):
         span = re.split(r"\bbut\s+not\b", m.group(1))[0]
         for a in _tokenize_analyte_list(span):
-            b = _normalize_analyte_token(a)
-            set_val(b, "Positive")
+            set_val(_normalize_analyte_token(a), "Positive")
 
     # 2️⃣ negatives via common phrases
     neg_pats = [
@@ -96,28 +128,23 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
     for pat in neg_pats:
         for m in re.finditer(pat, t):
             for a in _tokenize_analyte_list(m.group(1)):
-                b = _normalize_analyte_token(a)
-                set_val(b, "Negative")
+                set_val(_normalize_analyte_token(a), "Negative")
 
     # 3️⃣ negatives after "but not X, Y or Z / nor Z"
     for m in re.finditer(
         r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t
     ):
         for a in _tokenize_analyte_list(m.group(1)):
-            b = _normalize_analyte_token(a)
-            set_val(b, "Negative")
+            set_val(_normalize_analyte_token(a), "Negative")
 
     # 4️⃣ shorthand  lactose -, rhamnose +
     for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t):
         a, sign = m.group(1), m.group(2)
-        b = _normalize_analyte_token(a)
-        set_val(b, "Positive" if sign == "+" else "Negative")
+        set_val(_normalize_analyte_token(a), "Positive" if sign == "+" else "Negative")
 
     # 5️⃣ non-lactose fermenting / fermenter
     for m in re.finditer(r"\bnon[-\s]?([a-z0-9\-]+)\s+ferment(?:er|ing)?\b", t):
-        a = m.group(1)
-        b = _normalize_analyte_token(a)
-        set_val(b, "Negative")
+        set_val(_normalize_analyte_token(m.group(1)), "Negative")
 
     # 6️⃣ ONPG
     if re.search(r"\bonpg\s*(?:test)?\s*(\+|positive)\b", t):
@@ -125,17 +152,11 @@ def extract_fermentations_regex(text: str, fermentation_fields: List[str]) -> Di
     elif re.search(r"\bonpg\s*(?:test)?\s*(\-|negative)\b", t):
         out["ONPG Test"] = "Negative"
 
-    # 7️⃣ NaCl tolerance
-    if re.search(r"\bgrows\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
-        out["NaCl Tolerance"] = "Positive"
-    if re.search(r"\bno\s+growth\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
-        out["NaCl Tolerance"] = "Negative"
-
     return out
 
 
 # ==========================================================
-#  Prompt builders for the LLM stage
+#  Prompt builders
 # ==========================================================
 def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
@@ -147,13 +168,12 @@ def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
         "You parse microbiology observations into structured results. "
         "Focus on morphology, enzyme, and growth traits; fermentation handled separately. "
         "Return JSON; unmentioned fields='Unknown'.\n"
-        f"Morphology: {morph}\nEnzyme: {enz}\nFermentation examples: {ferm}\nOther: {other}"
+        f"Morphology: {morph}\nEnzyme: {enz}\nFermentation: {ferm}\nOther: {other}"
     )
     return [
         {"role": "system", "content": system},
         {"role": "user", "content": f"Previous facts:\n{prior}\nObservation:\n{user_text}"},
     ]
-
 
 def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
@@ -166,14 +186,13 @@ def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=No
 
 
 # ==========================================================
-#  MAIN ENTRY POINT  (imported by app_chat.py)
+#  MAIN ENTRY POINT
 # ==========================================================
 def parse_input_free_text(
     user_text: str,
     prior_facts: Dict | None = None,
     db_fields: List[str] | None = None,
 ) -> Dict:
-    """Main parser combining LLM and deterministic extraction."""
     if not user_text.strip():
         return {}
 
@@ -207,8 +226,8 @@ def parse_input_free_text(
         print("⚠️ LLM parser failed — fallback:", e)
         parsed = fallback_parser(user_text, prior_facts)
 
-    # --- Step 2 : deterministic regex add-ons
-    regex_hits = extract_fermentations_regex(user_text, cats["Fermentation"])
-    parsed.update(regex_hits)
+    # --- Step 2 : regex enrichment
+    parsed.update(extract_fermentations_regex(user_text, cats["Fermentation"]))
+    parsed.update(extract_patterns_regex(user_text, db_fields))
 
     return parsed
