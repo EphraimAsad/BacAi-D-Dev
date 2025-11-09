@@ -71,10 +71,10 @@ os.environ["BACTAI_MODEL"] = "gpt" if "GPT" in parser_choice else "local"
 os.environ["OPENAI_MODEL"] = "gpt-4o-mini"
 os.environ["LOCAL_MODEL"] = "llama3"
 
-# Display (read-only) current model names
-st.sidebar.markdown("**Active Models**")
-st.sidebar.text_input("OpenAI model", value=os.environ["OPENAI_MODEL"], disabled=True)
-st.sidebar.text_input("Local model (Ollama)", value=os.environ["LOCAL_MODEL"], disabled=True)
+# ---- COLLAPSIBLE ACTIVE MODELS ----
+with st.sidebar.expander("🧩 Active Models (info)", expanded=False):
+    st.text_input("OpenAI model", value=os.environ["OPENAI_MODEL"], disabled=True)
+    st.text_input("Local model (Ollama)", value=os.environ["LOCAL_MODEL"], disabled=True)
 
 st.sidebar.markdown("---")
 
