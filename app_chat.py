@@ -129,6 +129,9 @@ with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=Fa
             # Save feedback file
             with open("parser_feedback.json", "w", encoding="utf-8") as fb:
                 json.dump(feedback, fb, indent=2)
+            from parser_llm import analyze_feedback_and_learn
+            analyze_feedback_and_learn("parser_feedback.json", "parser_memory.json")
+
 
             st.session_state.gold_results = results
             st.session_state.gold_summary = (passed, len(tests))
