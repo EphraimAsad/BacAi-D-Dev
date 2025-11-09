@@ -1,5 +1,5 @@
-# parser_llm.py — Step 1.6 n+++ (Unicode/whitespace, haemolysis, NaCl, decarboxylases,
-# esculin alias, growth fixes, Gram parsing, Rhamnose 'or' fix)
+# parser_llm.py — Step 1.6 n++++ (Unicode/whitespace, haemolysis, NaCl, decarboxylases,
+# Esculin alias, growth fixes, Gram parsing, and robust "but not … or …" handling)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -59,7 +59,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("lipase test", "Lipase Test")
     add("onpg", "ONPG")
     add("onpg test", "ONPG")
-    add("esculin hydrolysis", "Esculin Hydrolysis")  # NEW alias
+    add("esculin hydrolysis", "Esculin Hydrolysis")  # alias → exact sheet column
     add("nacl tolerance", "NaCl Tolerant (>=6%)")
     add("nacl tolerant", "NaCl Tolerant (>=6%)")
     add("nacl", "NaCl Tolerant (>=6%)")
@@ -175,8 +175,9 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             _set_field_safe(out, alias[b], val)
 
     # POSITIVE lists ("ferments"/"utilizes")
+    # NOTE: re.split doesn't accept flags; embed (?i) in the pattern for case-insensitive split
     for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t, flags=re.I):
-        span = re.split(r"\bbut\s+not\b", m.group(1), flags=re.I)[0]
+        span = re.split(r"(?i)\bbut\s+not\b", m.group(1))[0]
         for a in _tokenize_list(span):
             set_field_by_base(a, "Positive")
 
@@ -192,12 +193,12 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
-    # NEGATIVE after "but not X, Y or Z / nor Z" (improved tokenization)
+    # NEGATIVE after "but not X, Y or Z / nor Z" (robust tokenization)
     for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t, flags=re.I):
         segment = m.group(1)
         # convert "or"/"nor" into commas so terminal items (e.g., rhamnose) are caught
-        segment = re.sub(r"\bor\b", ",", segment)
-        segment = re.sub(r"\bnor\b", ",", segment)
+        segment = re.sub(r"\bor\b", ",", segment, flags=re.I)
+        segment = re.sub(r"\bnor\b", ",", segment, flags=re.I)
         for a in _tokenize_list(segment):
             set_field_by_base(a, "Negative")
 
