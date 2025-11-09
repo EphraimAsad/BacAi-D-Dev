@@ -1,6 +1,7 @@
-# parser_llm.py — Step 1.6 ultra (Unicode/whitespace, haemolysis bridge, NaCl tolerant,
+# parser_llm.py — Step 1.6 ultra+ (Unicode/whitespace, haemolysis bridge, NaCl tolerant,
 # Esculin alias, growth fixes, Gram parsing, decarboxylases,
-# robust "but not … or/nor …" + fallback sweep, media detection (XLD etc.), colony color, facultative order)
+# robust "but not … or/nor …" + fallback sweep, media detection (XLD etc.) with diagnostic exclusion,
+# colony color, oxygen requirement labels)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -244,7 +245,7 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Regex enrichment: morphology, enzyme/other tests, capsule, haemolysis, oxygen, growth temp,
-# media detection, colony morphology
+# media detection (with diagnostic exclusion), colony morphology
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     out: Dict[str, str] = {}
@@ -317,13 +318,13 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif re.search(r"\b(gamma|γ)[-\s]?haem", t, flags=re.I):
         set_field("haemolysis type", "Gamma")
 
-    # Oxygen requirement (check 'facultative' first to avoid false 'anaerobic' match)
+    # Oxygen requirement (expanded descriptive labels)
     if re.search(r"\bfacultative\b", t, flags=re.I):
-        set_field("oxygen requirement", "Facultative")
+        set_field("oxygen requirement", "Facultative Anaerobe")
     elif re.search(r"\baerobic\b", t, flags=re.I):
-        set_field("oxygen requirement", "Aerobic")
+        set_field("oxygen requirement", "Obligate Aerobe")
     elif re.search(r"\banaerobic\b", t, flags=re.I):
-        set_field("oxygen requirement", "Anaerobic")
+        set_field("oxygen requirement", "Obligate Anaerobe")
     elif re.search(r"\bmicroaerophil(ic|e)\b", t, flags=re.I):
         set_field("oxygen requirement", "Microaerophilic")
 
@@ -349,17 +350,19 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         set_field("growth temperature", temp_num)
 
     # Media detection (capture XLD, MacConkey, Blood agar, etc.; support multiple)
-    # Examples: "colonies are black on XLD agar", "on MacConkey agar", "on blood agar"
+    # Exclude clearly diagnostic media that shouldn't populate "Media Grown On"
+    diagnostic_exclude = ["triple sugar iron", "tsi", "sim", "kligler", "msrv"]
     media_hits = re.findall(r"\b([a-z0-9\-\+]+)\s+agar\b", t, flags=re.I)
     collected_media: List[str] = []
     for mname in media_hits:
-        # Normalize common abbreviations / keep as "<Name> Agar"
+        lowname = mname.lower()
+        if any(ex in lowname for ex in diagnostic_exclude):
+            continue  # skip diagnostic media
         name = (mname.strip().upper())
-        if name in {"XLD", "MacConkey".upper(), "BLOOD", "TSA"}:
+        if name in {"XLD", "MACCONKEY", "BLOOD", "TSA"}:
             pretty = "XLD Agar" if name == "XLD" else \
                      "MacConkey Agar" if name == "MACCONKEY" else \
-                     "Blood Agar" if name == "BLOOD" else \
-                     "TSA"  # rare, but included
+                     "Blood Agar" if name == "BLOOD" else "TSA"
         else:
             pretty = mname.strip().title() + " Agar"
         if pretty not in collected_media:
