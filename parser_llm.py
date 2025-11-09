@@ -1,50 +1,65 @@
-# parser_llm.py — Step 1.6b (Smart Schema Prompt)
+# parser_llm.py — Step 1.6 c Alias-Aware Smart Schema
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
 
 
-# --------------------------
-# Dynamic schema helpers
-# --------------------------
-def build_field_list(db_fields: List[str]) -> str:
-    """Return a short, comma-separated list of valid field names for the LLM prompt."""
-    clean = [f.strip() for f in db_fields if f and f.lower() != "genus"]
-    return ", ".join(sorted(clean))
+# -----------------------------------------------------
+# Build alias-aware field list
+# -----------------------------------------------------
+def build_field_aliases(db_fields: List[str]) -> dict:
+    """
+    Create a mapping of {canonical_field: [aliases]}.
+    e.g. 'Rhamnose Fermentation' → ['Rhamnose']
+    """
+    aliases = {}
+    for f in db_fields:
+        if not f or f.lower() == "genus":
+            continue
+        name = f.strip()
+        short = re.sub(r"\s*(Fermentation|Test)$", "", name, flags=re.I)
+        short = short.replace("(", "").replace(")", "").strip()
+        alist = [short]
+        if "fermentation" in name.lower():
+            alist.append(short + " Fermentation")
+        if "test" in name.lower():
+            alist.append(short + " Test")
+        aliases[name] = list(set(alist))
+    return aliases
 
 
-# --------------------------
-# Main parser
-# --------------------------
+# -----------------------------------------------------
+# Parser entry-point
+# -----------------------------------------------------
 def parse_input_free_text(user_text: str,
                           prior_facts: Dict | None = None,
                           db_fields: List[str] | None = None) -> Dict:
-    """
-    Parse free-text microbiology input using GPT or local Llama.
-    Falls back to regex parser if the LLM fails.
-    """
     if not user_text.strip():
         return {}
 
-    field_list = build_field_list(db_fields or [])
+    db_fields = [f for f in (db_fields or []) if f and f.lower() != "genus"]
+    alias_map = build_field_aliases(db_fields)
+    alias_text = "; ".join(
+        [f"{k}: {', '.join(v)}" for k, v in alias_map.items()]
+    )
 
     try:
         model_choice = os.getenv("BACTAI_MODEL", "local").lower()
         if model_choice == "gpt":
             from openai import OpenAI
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            prompt = build_prompt(user_text, field_list, prior_facts)
+            prompt = build_prompt(user_text, alias_text, prior_facts)
             resp = client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=prompt,
-                temperature=0.1,
+                temperature=0.3,
                 response_format={"type": "json_object"},
             )
             return json.loads(resp.choices[0].message.content)
 
-        else:  # local (Ollama / Llama)
+        else:
             import ollama
-            prompt = build_prompt_text(user_text, field_list, prior_facts)
+            prompt = build_prompt_text(user_text, alias_text, prior_facts)
             out = ollama.chat(
                 model=os.getenv("LOCAL_MODEL", "llama3"),
                 messages=[{"role": "user", "content": prompt}],
@@ -54,54 +69,50 @@ def parse_input_free_text(user_text: str,
             return json.loads(m.group(0)) if m else {}
 
     except Exception as e:
-        print("⚠️ LLM parser failed, using fallback:", e)
+        print("⚠️ LLM parser failed – using fallback:", e)
         return fallback_parser(user_text, prior_facts)
 
 
-# --------------------------
+# -----------------------------------------------------
 # Prompt builders
-# --------------------------
-def build_prompt(user_text: str, field_list: str, prior_facts=None):
-    """
-    Structured prompt for GPT models.
-    """
+# -----------------------------------------------------
+def build_prompt(user_text: str, alias_text: str, prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
     system = (
         "You are a microbiology parser that extracts biochemical, morphological, and growth test results.\n"
-        "You will receive user observations describing an organism.\n"
-        "Map any described reactions or traits to the closest matching field name from the list below.\n"
-        "Examples of mapping:\n"
-        "  - 'Rhamnose positive' → 'Rhamnose Fermentation': 'Positive'\n"
-        "  - 'ferments sucrose' → 'Sucrose Fermentation': 'Positive'\n"
-        "  - 'does not ferment lactose' → 'Lactose Fermentation': 'Negative'\n"
-        "  - 'grows in 6.5% NaCl' → 'NaCl Tolerance': 'Positive'\n"
-        "  - 'oxidase +' → 'Oxidase': 'Positive'\n\n"
+        "Use contextual understanding to map phrases like '+', '-', 'ferments X', or 'non-motile' "
+        "to the correct test field.  Use the alias list below to match abbreviated or shortened names.\n\n"
+        "Alias list (showing equivalent forms):\n"
+        f"{alias_text}\n\n"
         "Return valid JSON where each key is a field name and the value is one of:\n"
-        "  'Positive', 'Negative', 'Variable', a descriptive string, or 'Unknown'.\n"
-        "If a field is not mentioned, set it to 'Unknown'."
+        "  'Positive', 'Negative', 'Variable', descriptive text, or 'Unknown'.\n"
+        "Unmentioned fields → 'Unknown'.\n\n"
+        "Example output:\n"
+        "{\n"
+        '  "Gram Stain": "Negative",\n'
+        '  "Oxidase": "Positive",\n'
+        '  "Rhamnose Fermentation": "Positive",\n'
+        '  "Lactose Fermentation": "Negative"\n'
+        "}\n"
     )
-    list_section = f"\n\nValid field names:\n{field_list}\n\n"
-    msg = [
-        {"role": "system", "content": system + list_section},
+    return [
+        {"role": "system", "content": system},
         {
             "role": "user",
-            "content": f"Previous facts: {prior}\nUser observation: {user_text}",
+            "content": f"Previous facts:\n{prior}\nUser observation:\n{user_text}",
         },
     ]
-    return msg
 
 
-def build_prompt_text(user_text: str, field_list: str, prior_facts=None):
-    """
-    Equivalent prompt for local Llama models.
-    """
+def build_prompt_text(user_text: str, alias_text: str, prior_facts=None):
     prior = json.dumps(prior_facts or {}, indent=2)
     return (
         "Extract microbiology test results from this observation.\n"
-        "Match each described reaction to the closest field name from the list below.\n"
-        "If the user mentions a test or abbreviation (e.g. '+', '-', 'ferments X'), map it appropriately.\n"
-        "Return strictly valid JSON with one key per field.\n"
-        "Unmentioned fields → 'Unknown'.\n\n"
-        f"Valid field names:\n{field_list}\n\n"
-        f"Previous facts: {prior}\nUser observation: {user_text}"
+        "Match each described reaction to the correct field using the alias list below.\n"
+        "If a reaction or abbreviation (e.g. '+', '–', 'ferments X') appears, interpret accordingly.\n"
+        "Return valid JSON; unmentioned fields → 'Unknown'.\n\n"
+        f"Alias list:\n{alias_text}\n\n"
+        "Example output:\n"
+        "{ 'Oxidase': 'Positive', 'Rhamnose Fermentation': 'Positive', 'Lactose Fermentation': 'Negative' }\n\n"
+        f"Previous facts:\n{prior}\nUser observation:\n{user_text}"
     )
