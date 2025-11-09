@@ -176,6 +176,9 @@ with st.sidebar.expander("🧪 Gold Spec Tests", expanded=False):
                 json.dump(feedback, fb, indent=2)
             from parser_llm import analyze_feedback_and_learn
             analyze_feedback_and_learn("parser_feedback.json", "parser_memory.json")
+            from parser_llm import auto_update_parser_regex
+            auto_update_parser_regex("parser_memory.json", "parser_llm.py")
+
 
 
             st.session_state.gold_results = results
@@ -298,4 +301,5 @@ if not st.session_state.results.empty:
 # --- FOOTER ---
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
+
 
