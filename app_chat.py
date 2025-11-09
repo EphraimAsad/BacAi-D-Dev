@@ -131,6 +131,9 @@ with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=Fa
                 json.dump(feedback, fb, indent=2)
             from parser_llm import analyze_feedback_and_learn
             analyze_feedback_and_learn("parser_feedback.json", "parser_memory.json")
+            from parser_llm import auto_update_parser_regex
+            auto_update_parser_regex("parser_memory.json", "parser_llm.py")
+
 
 
             st.session_state.gold_results = results
