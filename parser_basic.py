@@ -21,7 +21,7 @@
 #   python parser_basic.py --demo "..." # parse one paragraph and print JSON
 #
 # ---------------------------------------------------------------------------------------
-
+import difflib
 import re, json, sys
 from typing import Dict, List, Set, Tuple, Optional
 
@@ -1057,3 +1057,75 @@ if __name__ == "__main__":
     print("  python parser_basic.py --test")
     print("  python parser_basic.py --demo \"<paragraph>\"")
     print("  python parser_basic.py --whatif \"set catalase to negative\"")
+# ──────────────────────────────────────────────────────────────────────────────
+# 🧠 Automated Feedback Self-Training System
+# ──────────────────────────────────────────────────────────────────────────────
+def analyze_feedback_and_learn(feedback_path="parser_feedback.json", memory_path="parser_memory.json"):
+    """
+    Reads parser feedback (mismatches) and identifies recurring mistakes.
+    Then appends small learned rules or examples to memory_path.
+    """
+    if not os.path.exists(feedback_path):
+        return
+
+    try:
+        with open(feedback_path, "r", encoding="utf-8") as f:
+            feedback = json.load(f)
+        if not feedback:
+            return
+    except Exception as e:
+        print(f"⚠️ Feedback load failed: {e}")
+        return
+
+    # --- Load existing memory if any ---
+    memory = {}
+    if os.path.exists(memory_path):
+        try:
+            with open(memory_path, "r", encoding="utf-8") as mf:
+                memory = json.load(mf)
+        except Exception:
+            memory = {}
+
+    # --- Analyze for recurring errors ---
+    rule_suggestions = []
+    field_counts = {}
+
+    for case in feedback:
+        for err in case.get("errors", []):
+            field = err.get("field")
+            got = (err.get("got") or "").lower()
+            exp = (err.get("expected") or "").lower()
+            if field:
+                field_counts[field] = field_counts.get(field, 0) + 1
+                # Generate suggestion if same misinterpretation repeats
+                sim = difflib.SequenceMatcher(None, got, exp).ratio()
+                if sim < 0.6:
+                    rule_suggestions.append(
+                        f"Consider adjusting pattern for '{field}' — often parsed '{got}' instead of '{exp}'"
+                    )
+
+    # --- Summarize new hints ---
+    summary = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "top_error_fields": sorted(field_counts.items(), key=lambda x: -x[1])[:5],
+        "suggestions": rule_suggestions[:10]
+    }
+
+    memory.setdefault("history", []).append(summary)
+
+    # --- Optionally auto-create regex heuristics for recurring fields ---
+    auto_heuristics = {}
+    for field, count in field_counts.items():
+        if count >= 3:
+            auto_heuristics[field] = {
+                "rule": f"Add stronger regex matching for '{field}' with negation/positive terms",
+                "count": count
+            }
+
+    memory["auto_heuristics"] = auto_heuristics
+
+    # --- Save memory file ---
+    with open(memory_path, "w", encoding="utf-8") as mf:
+        json.dump(memory, mf, indent=2)
+
+    print(f"🧠 Learned {len(rule_suggestions)} new parser hints.")
