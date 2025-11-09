@@ -1,5 +1,5 @@
-# parser_llm.py — Step 1.6 n++ (Unicode/whitespace, haemolysis, NaCl, decarboxylases, esculin,
-# growth fixes, Gram parsing, and H2S precedence)
+# parser_llm.py — Step 1.6 n+++ (Unicode/whitespace, haemolysis, NaCl, decarboxylases,
+# esculin alias, growth fixes, Gram parsing, Rhamnose 'or' fix)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -59,6 +59,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("lipase test", "Lipase Test")
     add("onpg", "ONPG")
     add("onpg test", "ONPG")
+    add("esculin hydrolysis", "Esculin Hydrolysis")  # NEW alias
     add("nacl tolerance", "NaCl Tolerant (>=6%)")
     add("nacl tolerant", "NaCl Tolerant (>=6%)")
     add("nacl", "NaCl Tolerant (>=6%)")
@@ -82,7 +83,6 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("growth temperature", "Growth Temperature")
     add("media grown on", "Media Grown On")
     add("oxygen requirement", "Oxygen Requirement")
-    # NEW: ensure we can map lowercase "gram stain" reliably
     add("gram stain", "Gram Stain")
     add("shape", "Shape")
 
@@ -152,7 +152,7 @@ def _set_field_safe(out: Dict[str, str], key: str, val: str):
         return
     if current == "Negative" and val == "Positive":
         return  # keep Negative
-    out[key] = val  # overwrite for same polarity or stronger info
+    out[key] = val  # overwrite for same polarity or upgrades
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -192,9 +192,13 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
-    # NEGATIVE after "but not X, Y or Z / nor Z"
+    # NEGATIVE after "but not X, Y or Z / nor Z" (improved tokenization)
     for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t, flags=re.I):
-        for a in _tokenize_list(m.group(1)):
+        segment = m.group(1)
+        # convert "or"/"nor" into commas so terminal items (e.g., rhamnose) are caught
+        segment = re.sub(r"\bor\b", ",", segment)
+        segment = re.sub(r"\bnor\b", ",", segment)
+        for a in _tokenize_list(segment):
             set_field_by_base(a, "Negative")
 
     # Shorthand "lactose -" / "rhamnose +"
@@ -210,13 +214,17 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         if "onpg" in alias and alias["onpg"] in fields:
             _set_field_safe(out, alias["onpg"], "Negative")
 
-    # NaCl tolerance phrases (in / up to / to … % NaCl) + salt wording
+    # NaCl tolerance phrases (in / up to / to / at … % NaCl) + salt wording
     if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to|to|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t, flags=re.I):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             _set_field_safe(out, alias["nacl tolerant"], "Positive")
     if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t, flags=re.I):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             _set_field_safe(out, alias["nacl tolerant"], "Negative")
+    # Simple keyword fallback (e.g., "NaCl tolerant" without % value)
+    if re.search(r"\bnacl\s+tolerant\b", t, flags=re.I):
+        if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
+            _set_field_safe(out, alias["nacl tolerant"], "Positive")
 
     return out
 
@@ -235,14 +243,14 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         if target in fields:
             _set_field_safe(out, target, val)
 
-    # NEW: Gram Stain parsing (handles "gram-positive"/"gram negative")
+    # Gram Stain parsing (handles "gram-positive"/"gram negative")
     gram_pos = re.search(r"\bgram[-\s]?positive\b", t, flags=re.I)
     gram_neg = re.search(r"\bgram[-\s]?negative\b", t, flags=re.I)
     if gram_pos and not gram_neg:
         set_field("gram stain", "Positive")
     elif gram_neg and not gram_pos:
         set_field("gram stain", "Negative")
-    # If both appear (rare, e.g., "mixture"), we leave it unchanged to avoid conflicts.
+    # If both appear (rare), leave unset to avoid conflict.
 
     # Generic biochemical (+ / - / weakly positive)
     generic_targets = [
@@ -257,7 +265,7 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         elif re.search(rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b", t, flags=re.I):
             set_field(test, "Variable")
 
-    # Phrase variants (Unicode-friendly H2S, nitrate)
+    # Phrase variants (nitrate)
     if re.search(r"\breduces\s+nitrate\b", t, flags=re.I):
         set_field("nitrate", "Positive")
     if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t, flags=re.I):
