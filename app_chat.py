@@ -1,13 +1,14 @@
-# app_chat.py — Step 1.6 (Dynamic Schema)
+# app_chat.py — Step 1.6 (Dynamic Schema + Gold Spec Tests)
 import os
 import re
+import json
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 
 from engine import BacteriaIdentifier
-from parser_llm import parse_input_free_text  # Now dynamic schema
+from parser_llm import parse_input_free_text  # Dynamic schema + feedback loop
 
 # ---- PAGE CONFIG ----
 st.set_page_config(page_title="BactAI-D — Language Reasoning (Chat)", layout="wide")
@@ -18,7 +19,6 @@ def load_data(path, last_modified):
     df = pd.read_excel(path)
     df.columns = [c.strip() for c in df.columns]
     return df
-
 
 # Resolve data path
 primary_path = os.path.join("data", "bacteria_db.xlsx")
@@ -43,13 +43,12 @@ st.markdown(
     "_'Gram negative rod, oxidase positive, motile, non-lactose fermenter on MacConkey.'_). "
     "I’ll parse it, run the BactAI-D engine, and explain the result."
 )
-
 st.markdown(
     """
 **How to read the scores**
 
-- **Confidence** – Based **only on the tests you entered**. It reflects matches across the fields you actually provided.  
-- **True Confidence (All Tests)** – The same internal score scaled by **all possible fields in the database**.
+- **Confidence** – Based **only on the tests you entered**.  
+- **True Confidence (All Tests)** – The same score scaled by **all possible fields in the database**.
 """
 )
 
@@ -60,6 +59,10 @@ if "history" not in st.session_state:
     st.session_state.history = []
 if "last_results" not in st.session_state:
     st.session_state.last_results = None
+if "gold_results" not in st.session_state:
+    st.session_state.gold_results = None
+if "gold_summary" not in st.session_state:
+    st.session_state.gold_summary = None
 
 # ---- SIDEBAR: PARSER SETTINGS ----
 st.sidebar.markdown("### 🧠 Parser Settings")
@@ -85,12 +88,84 @@ with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True
 with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
     st.write(", ".join(sorted(db_fields)))
 
+# ---- SIDEBAR: RESET & GOLD TESTS ----
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Reset conversation"):
     st.session_state.facts = {}
     st.session_state.history = []
     st.session_state.last_results = None
+    st.session_state.gold_results = None
+    st.session_state.gold_summary = None
     st.rerun()
+
+# 🧪 GOLD SPEC TESTS
+with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=False):
+    # Run test suite
+    if st.button("▶️ Run Gold Spec Tests"):
+        try:
+            with open("gold_tests.json", "r", encoding="utf-8") as f:
+                tests = json.load(f)
+
+            results = []
+            feedback = []
+            passed = 0
+
+            for case in tests:
+                parsed = parse_input_free_text(case["input"], db_fields=db_fields)
+                expected = case.get("expected", {})
+                mismatched = []
+                for key, exp_val in expected.items():
+                    got_val = parsed.get(key)
+                    if got_val != exp_val:
+                        mismatched.append({"field": key, "got": got_val, "expected": exp_val})
+
+                if mismatched:
+                    results.append({"name": case["name"], "status": "❌", "mismatches": mismatched, "parsed": parsed, "expected": expected})
+                    feedback.append({"name": case["name"], "text": case["input"], "errors": mismatched})
+                else:
+                    results.append({"name": case["name"], "status": "✅", "mismatches": [], "parsed": parsed, "expected": expected})
+                    passed += 1
+
+            # Save feedback file
+            with open("parser_feedback.json", "w", encoding="utf-8") as fb:
+                json.dump(feedback, fb, indent=2)
+
+            st.session_state.gold_results = results
+            st.session_state.gold_summary = (passed, len(tests))
+            st.success(f"Gold Spec Tests complete ({passed}/{len(tests)} passed).")
+
+        except FileNotFoundError:
+            st.error("⚠️ gold_tests.json not found. Add it to the repo root.")
+        except Exception as e:
+            st.error(f"Error running Gold Test Suite: {e}")
+
+    # Clear learning memory
+    if st.button("🧹 Clear Learning Memory"):
+        try:
+            if os.path.exists("parser_feedback.json"):
+                os.remove("parser_feedback.json")
+                st.success("Cleared feedback memory.")
+            else:
+                st.info("No feedback file found.")
+        except Exception as e:
+            st.error(f"Could not clear memory: {e}")
+
+# ---- DISPLAY GOLD TEST RESULTS ----
+if st.session_state.gold_results is not None:
+    passed, total = st.session_state.gold_summary or (0, 0)
+    st.markdown("## 🧪 Gold Test Results (Chat)")
+    st.markdown(f"**Summary:** {passed}/{total} passed")
+    for r in st.session_state.gold_results:
+        if r["status"] == "✅":
+            st.markdown(f"**{r['name']}** — ✅ Passed all checks")
+        else:
+            st.markdown(f"**{r['name']}** — ❌ Mismatches:")
+            for m in r["mismatches"]:
+                st.markdown(f"- **{m['field']}**: got `{m['got']}`, expected `{m['expected']}`")
+            with st.expander("Show parsed vs expected"):
+                st.code(json.dumps({"parsed": r["parsed"], "expected": r["expected"]}, indent=2), language="json")
+
+st.sidebar.markdown("---")
 
 # ---- CHAT HISTORY ----
 for msg in st.session_state.history:
@@ -102,15 +177,14 @@ if user_msg:
     st.session_state.history.append({"role": "user", "content": user_msg})
     st.chat_message("user").markdown(user_msg)
 
-    # ⬇️ NEW: Pass db_fields dynamically to parser
+    # ⬇️ Parse free text using dynamic schema + learning feedback
     parsed = parse_input_free_text(user_msg, prior_facts=st.session_state.facts, db_fields=db_fields)
-
     results = eng.identify(parsed)
 
     if not results:
         reply = (
             "I couldn't find a good match with the current information. "
-            "Try adding a few more traits or tests (see **Supported Tests** in the sidebar)."
+            "Try adding more descriptive test results or mention colony colour, growth, etc."
         )
     else:
         top = results[0]
@@ -129,6 +203,7 @@ if user_msg:
             reply_lines.append(f"**Notes:** {top.extra_notes}")
         reply = "\n\n".join(reply_lines)
 
+    # Update session memory
     st.session_state.facts.update({k: v for k, v in parsed.items() if v and v != "Unknown"})
     st.session_state.last_results = results
     st.session_state.history.append({"role": "assistant", "content": reply})
