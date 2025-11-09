@@ -1,4 +1,4 @@
-# parser_llm.py — Step 1.6 m (Unicode/whitespace normalization, growth fix, oxygen & decarboxylases)
+# parser_llm.py — Step 1.6 n (Unicode/whitespace normalization, growth fix, haemolysis/NaCl/decars/esculin/oxygen)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -92,20 +92,33 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Text normalization utilities (Unicode, whitespace)
+# Text normalization utilities (Unicode, whitespace, hyphens, spelling)
 # ──────────────────────────────────────────────────────────────────────────────
 _SUBSCRIPT_DIGITS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
 
 def normalize_text(raw: str) -> str:
     """
     - Lowercase
-    - Replace Unicode subscript digits (e.g., H₂S → H2S)
+    - Replace Unicode subscript digits (H₂S → H2S)
+    - Normalize hyphens (-, – , —) to plain "-"
     - Normalize multiple spaces/newlines to a single space
-    - Normalize degree symbol spacing
+    - Normalize degree spacing
+    - Harmonize hemolysis/haemolysis spelling
     """
     t = raw or ""
+    # degree spacing
     t = t.replace("°", " °")
+    # subscripts → ASCII digits
     t = t.translate(_SUBSCRIPT_DIGITS)
+    # normalize hyphens
+    t = (t.replace("\u2010", "-")
+           .replace("\u2011", "-")
+           .replace("\u2012", "-")
+           .replace("\u2013", "-")
+           .replace("\u2014", "-"))
+    # US→UK spelling
+    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)
+    # lowercase + collapse whitespace
     t = t.lower()
     t = re.sub(r"\s+", " ", t).strip()
     return t
@@ -179,8 +192,8 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         if "onpg" in alias and alias["onpg"] in fields:
             out[alias["onpg"]] = "Negative"
 
-    # NaCl tolerance phrases (in / up to … % NaCl)
-    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t, flags=re.I):
+    # NaCl tolerance phrases (in / up to / to … % NaCl)
+    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to|to)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t, flags=re.I):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Positive"
     if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t, flags=re.I):
@@ -234,7 +247,8 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     # Gelatin / Esculin phrasing
     if re.search(r"\bgelatin\s+liquefaction\s+(?:\+|positive)\b", t, flags=re.I):
         set_field("gelatin", "Positive")
-    if re.search(r"\besculin\s+hydrolysis\s+(?:\+|positive)\b", t, flags=re.I):
+    if re.search(r"\besculin\s+hydrolysis\s+(?:\+|positive)\b", t, flags=re.I) or \
+       re.search(r"\bpositive\s+esculin\s+hydrolysis\b", t, flags=re.I):
         set_field("esculin hydrolysis", "Positive")
 
     # Capsule
@@ -242,6 +256,14 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         set_field("capsule", "Positive")
     if re.search(r"\bnon[-\s]?capsulated\b", t, flags=re.I):
         set_field("capsule", "Negative")
+
+    # Haemolysis type (accept beta/β and any hyphen/space)
+    if re.search(r"\b(beta|β)[-\s]?haem", t, flags=re.I):
+        set_field("haemolysis type", "Beta")
+    elif re.search(r"\b(alpha|α)[-\s]?haem", t, flags=re.I):
+        set_field("haemolysis type", "Alpha")
+    elif re.search(r"\b(gamma|γ)[-\s]?haem", t, flags=re.I):
+        set_field("haemolysis type", "Gamma")
 
     # Oxygen requirement (broad phrasing)
     if re.search(r"\baerobic\b", t, flags=re.I):
