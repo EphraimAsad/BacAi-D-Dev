@@ -187,8 +187,9 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Positive"
     if re.search(r"\bno\s+growth\s+in\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
-        if "nacl tolerant" in alias and alias["nacl tolerant"]] in fields:
+        if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Negative"
+
 
     return out
 
