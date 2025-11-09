@@ -1,4 +1,4 @@
-# app_chat.py
+# app_chat.py — Step 1.6 (Dynamic Schema)
 import os
 import re
 from datetime import datetime
@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from engine import BacteriaIdentifier
-from parser_llm import parse_input_free_text  # LLM (GPT/Local) with fallback to parser_basic
+from parser_llm import parse_input_free_text  # Now dynamic schema
 
 # ---- PAGE CONFIG ----
 st.set_page_config(page_title="BactAI-D — Language Reasoning (Chat)", layout="wide")
@@ -33,6 +33,7 @@ except FileNotFoundError:
 
 db = load_data(data_path, last_modified)
 eng = BacteriaIdentifier(db)
+db_fields = [c for c in db.columns if c.lower() != "genus"]
 
 # ---- HEADER ----
 st.title("🧫 BactAI-D — Language Reasoning (Chat)")
@@ -43,14 +44,12 @@ st.markdown(
     "I’ll parse it, run the BactAI-D engine, and explain the result."
 )
 
-# Confidence explainer
 st.markdown(
     """
 **How to read the scores**
 
-- **Confidence** – Based **only on the tests you entered**. It reflects matches across the fields you actually provided (Unknowns are ignored).  
-- **True Confidence (All Tests)** – The same internal score scaled by **all possible fields in the database**.  
-  This shows how strong the match would be **if every field were filled**; it’s often lower when many inputs are Unknown.
+- **Confidence** – Based **only on the tests you entered**. It reflects matches across the fields you actually provided.  
+- **True Confidence (All Tests)** – The same internal score scaled by **all possible fields in the database**.
 """
 )
 
@@ -58,20 +57,17 @@ st.markdown(
 if "facts" not in st.session_state:
     st.session_state.facts = {}
 if "history" not in st.session_state:
-    st.session_state.history = []     # [{"role": "user"|"assistant", "content": str}]
+    st.session_state.history = []
 if "last_results" not in st.session_state:
     st.session_state.last_results = None
 
 # ---- SIDEBAR: PARSER SETTINGS ----
 st.sidebar.markdown("### 🧠 Parser Settings")
 parser_choice = st.sidebar.radio("Choose Parser Model", ["Local Llama (via Ollama)", "GPT (Cloud)"], index=0)
-
-# Expose choices via env vars for parser_llm
 os.environ["BACTAI_MODEL"] = "gpt" if "GPT" in parser_choice else "local"
 os.environ["OPENAI_MODEL"] = "gpt-4o-mini"
 os.environ["LOCAL_MODEL"] = "llama3"
 
-# ---- COLLAPSIBLE ACTIVE MODELS ----
 with st.sidebar.expander("🧩 Active Models (info)", expanded=False):
     st.text_input("OpenAI model", value=os.environ["OPENAI_MODEL"], disabled=True)
     st.text_input("Local model (Ollama)", value=os.environ["LOCAL_MODEL"], disabled=True)
@@ -87,26 +83,7 @@ with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True
 
 # ---- SIDEBAR: SUPPORTED TESTS ----
 with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
-    fields = [c for c in eng.db.columns if c != "Genus"]
-
-    morph_stain = [f for f in fields if ("Gram" in f) or ("Shape" in f) or ("Colony" in f)]
-    enzyme_react = [f for f in fields if ("Fermentation" in f) or re.search(r"ase\b", f, re.IGNORECASE)]
-    hemo = [f for f in fields if "Haemolysis" in f or "Hemolysis" in f]
-    used = set(morph_stain + enzyme_react + hemo)
-    growth_other = [f for f in fields if f not in used]
-
-    if morph_stain:
-        st.markdown("**Morphology / Stain**")
-        st.write(", ".join(sorted(morph_stain)))
-    if enzyme_react:
-        st.markdown("**Enzyme / Fermentation Reactions**")
-        st.write(", ".join(sorted(enzyme_react)))
-    if hemo:
-        st.markdown("**Haemolysis / Hemolysis**")
-        st.write(", ".join(sorted(hemo)))
-    if growth_other:
-        st.markdown("**Other / Growth / Conditions**")
-        st.write(", ".join(sorted(growth_other)))
+    st.write(", ".join(sorted(db_fields)))
 
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Reset conversation"):
@@ -115,24 +92,21 @@ if st.sidebar.button("🔄 Reset conversation"):
     st.session_state.last_results = None
     st.rerun()
 
-# ---- RENDER HISTORY ----
+# ---- CHAT HISTORY ----
 for msg in st.session_state.history:
     st.chat_message(msg["role"]).markdown(msg["content"])
 
 # ---- CHAT INPUT ----
 user_msg = st.chat_input("Tell me your observations…")
 if user_msg:
-    # 1  Show user message
     st.session_state.history.append({"role": "user", "content": user_msg})
     st.chat_message("user").markdown(user_msg)
 
-    # 2  Parse text → fields (LLM or fallback)
-    parsed = parse_input_free_text(user_msg, prior_facts=st.session_state.facts)
+    # ⬇️ NEW: Pass db_fields dynamically to parser
+    parsed = parse_input_free_text(user_msg, prior_facts=st.session_state.facts, db_fields=db_fields)
 
-    # 3  Run engine
     results = eng.identify(parsed)
 
-    # 4  Compose reply
     if not results:
         reply = (
             "I couldn't find a good match with the current information. "
@@ -142,10 +116,8 @@ if user_msg:
         top = results[0]
         top3 = results[:3]
         ranked_str = ", ".join([f"**{r.genus}** ({r.confidence_percent()}%)" for r in top3])
-
         reasoning = top.reasoning_paragraph(ranked_results=results)
         next_tests = top.reasoning_factors.get("next_tests", "")
-
         reply_lines = [
             f"**Top match:** {top.genus} — {top.confidence_percent()}% (true: {top.true_confidence()}%)",
             f"**Other candidates:** {ranked_str}",
@@ -155,20 +127,13 @@ if user_msg:
             reply_lines.append(f"**Next tests to differentiate:** {next_tests}")
         if top.extra_notes:
             reply_lines.append(f"**Notes:** {top.extra_notes}")
-
         reply = "\n\n".join(reply_lines)
 
-    # 5  Update memory
     st.session_state.facts.update({k: v for k, v in parsed.items() if v and v != "Unknown"})
     st.session_state.last_results = results
     st.session_state.history.append({"role": "assistant", "content": reply})
-
-    # 6  Show assistant message
     st.chat_message("assistant").markdown(reply)
 
 # ---- FOOTER ----
 st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown(
-    "<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>",
-    unsafe_allow_html=True
-)
+st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>", unsafe_allow_html=True)
