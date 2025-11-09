@@ -511,9 +511,9 @@ def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[st
     ht = alias.get("haemolysis type"); h = alias.get("haemolysis")
     if ht in out and h in fields:
         tval = out.get(ht, "")
-        if tval in {"Alpha", "Beta"}:
+        if tval in {"Alpha", "Beta", "Gamma"}:
             out[h] = "Positive"
-        elif tval in {"Gamma", "None"}:
+        elif tval in {"None"}:
             out[h] = "Negative"
 
     # Clamp media spellings when possible
