@@ -24,6 +24,7 @@
 import difflib
 import re, json, sys
 from typing import Dict, List, Set, Tuple, Optional
+from datetime import datetime
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Allowed values & canonicalization (aligned with your Excel)
