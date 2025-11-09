@@ -791,6 +791,24 @@ def parse_input_free_text(user_text: str, prior_facts: Dict | None = None, db_fi
     if prior_facts:
         merged.update(prior_facts)
     return normalize_to_schema(merged, db_fields)
+    
+    # 🧠 Optional: load prior feedback as “few-shot learning” examples
+    feedback_examples = []
+    if os.path.exists("parser_feedback.json"):
+        with open("parser_feedback.json", "r", encoding="utf-8") as fb:
+            feedback_examples = json.load(fb)
+            # Only use the last 5 examples
+            feedback_examples = feedback_examples[-5:]
+
+    # Combine them into context prompt
+    feedback_context = ""
+    for f in feedback_examples:
+        feedback_context += f"\nExample failed: {f['name']}\nInput: {f['text']}\nErrors: {f['errors']}\n"
+
+    # Then pass this into your prompt
+    prompt = build_prompt_text(user_text, cats, prior_facts)
+    if feedback_context:
+        prompt = "The following examples show previous mistakes:\n" + feedback_context + "\n\nNow re-parse:\n" + prompt
 
 # ──────────────────────────────────────────────────────────────────────────────
 # What-If utilities (to simulate “What if Catalase was negative?”)
