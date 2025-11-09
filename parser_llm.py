@@ -1,5 +1,4 @@
-# parser_llm.py — Step 1.6 l (Expanded regex coverage & schema-aligned)
-
+# parser_llm.py — Step 1.6 m (Unicode/whitespace normalization, growth fix, oxygen & decarboxylases)
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -93,8 +92,25 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Text utilities
+# Text normalization utilities (Unicode, whitespace)
 # ──────────────────────────────────────────────────────────────────────────────
+_SUBSCRIPT_DIGITS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
+
+def normalize_text(raw: str) -> str:
+    """
+    - Lowercase
+    - Replace Unicode subscript digits (e.g., H₂S → H2S)
+    - Normalize multiple spaces/newlines to a single space
+    - Normalize degree symbol spacing
+    """
+    t = raw or ""
+    t = t.replace("°", " °")
+    t = t.translate(_SUBSCRIPT_DIGITS)
+    t = t.lower()
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
 def _normalize_token(s: str) -> str:
     s = s.strip().lower()
     s = s.replace("(", "").replace(")", "")
@@ -113,7 +129,7 @@ def _tokenize_list(s: str) -> List[str]:
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     out: Dict[str, str] = {}
-    t = text.lower()
+    t = normalize_text(text)
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
 
@@ -128,8 +144,8 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             out[alias[b]] = val
 
     # POSITIVE lists ("ferments"/"utilizes")
-    for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t):
-        span = re.split(r"\bbut\s+not\b", m.group(1))[0]
+    for m in re.finditer(r"(?:ferments|utilizes)\s+([a-z0-9\.\-%\s,/&]+)", t, flags=re.I):
+        span = re.split(r"\bbut\s+not\b", m.group(1), flags=re.I)[0]
         for a in _tokenize_list(span):
             set_field_by_base(a, "Positive")
 
@@ -141,33 +157,33 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         r"non[-\s]?fermenter\s+(?:for|of)?\s+([a-z0-9\.\-%\s,/&]+)",
     ]
     for pat in neg_pats:
-        for m in re.finditer(pat, t):
+        for m in re.finditer(pat, t, flags=re.I):
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
     # NEGATIVE after "but not X, Y or Z / nor Z"
-    for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t):
+    for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t, flags=re.I):
         for a in _tokenize_list(m.group(1)):
             set_field_by_base(a, "Negative")
 
     # Shorthand "lactose -" / "rhamnose +"
-    for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t):
+    for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t, flags=re.I):
         a, sign = m.group(1), m.group(2)
         set_field_by_base(a, "Positive" if sign == "+" else "Negative")
 
     # ONPG
-    if re.search(r"\bonpg\s*(?:test)?\s*(\+|positive)\b", t):
+    if re.search(r"\bonpg\s*(?:test)?\s*(?:is\s+)?(\+|positive)\b", t, flags=re.I):
         if "onpg" in alias and alias["onpg"] in fields:
             out[alias["onpg"]] = "Positive"
-    elif re.search(r"\bonpg\s*(?:test)?\s*(\-|negative)\b", t):
+    elif re.search(r"\bonpg\s*(?:test)?\s*(?:is\s+)?(\-|negative)\b", t, flags=re.I):
         if "onpg" in alias and alias["onpg"] in fields:
             out[alias["onpg"]] = "Negative"
 
     # NaCl tolerance phrases (in / up to … % NaCl)
-    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t, flags=re.I):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Positive"
-    if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t):
+    if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*na\s*cl\b", t, flags=re.I):
         if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
             out[alias["nacl tolerant"]] = "Negative"
 
@@ -175,11 +191,11 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Regex enrichment: enzyme/other tests, capsule, haemolysis, growth temp
+# Regex enrichment: enzyme/other tests, capsule, haemolysis, oxygen, growth temp
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     out: Dict[str, str] = {}
-    t = text.lower()
+    t = normalize_text(text)
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
 
@@ -194,45 +210,52 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         "citrate","vp","methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis"
     ]
     for test in generic_targets:
-        if re.search(rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected)\b", t):
+        if re.search(rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected)\b", t, flags=re.I):
             set_field(test, "Positive")
-        elif re.search(rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected)\b", t):
+        elif re.search(rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected)\b", t, flags=re.I):
             set_field(test, "Negative")
-        elif re.search(rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b", t):
+        elif re.search(rf"\b{test}\s*(?:test)?\s*weak(?:ly)?\s*positive\b", t, flags=re.I):
             set_field(test, "Variable")
 
-    # Phrase variants
-    if re.search(r"\breduces\s+nitrate\b", t):
+    # Phrase variants (Unicode-friendly H2S, nitrate)
+    if re.search(r"\breduces\s+nitrate\b", t, flags=re.I):
         set_field("nitrate", "Positive")
-    if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t):
+    if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t, flags=re.I):
         set_field("nitrate", "Negative")
-    if re.search(r"\bproduces\s+h\s*2\s*s\b", t):
+
+    # H2S (accept "h2s" after Unicode normalization, e.g., h₂s → h2s)
+    if re.search(r"\bh\s*2\s*s\s+(?:\+|positive|detected)\b", t, flags=re.I):
         set_field("h2s", "Positive")
-    if re.search(r"\bh\s*2\s*s\s+negative\b", t):
+    if re.search(r"\bh\s*2\s*s\s+(?:\-|negative|not\s+detected)\b", t, flags=re.I):
         set_field("h2s", "Negative")
-    if re.search(r"\bgelatin\s+liquefaction\s+(?:\+|positive)\b", t):
+    if re.search(r"\bproduces\s+h\s*2\s*s\b", t, flags=re.I):
+        set_field("h2s", "Positive")
+
+    # Gelatin / Esculin phrasing
+    if re.search(r"\bgelatin\s+liquefaction\s+(?:\+|positive)\b", t, flags=re.I):
         set_field("gelatin", "Positive")
-    if re.search(r"\besculin\s+hydrolysis\s+(?:\+|positive)\b", t):
+    if re.search(r"\besculin\s+hydrolysis\s+(?:\+|positive)\b", t, flags=re.I):
         set_field("esculin hydrolysis", "Positive")
 
     # Capsule
-    if re.search(r"\b(capsulated|encapsulated)\b", t):
+    if re.search(r"\b(capsulated|encapsulated)\b", t, flags=re.I):
         set_field("capsule", "Positive")
-    if re.search(r"\bnon[-\s]?capsulated\b", t):
+    if re.search(r"\bnon[-\s]?capsulated\b", t, flags=re.I):
         set_field("capsule", "Negative")
 
-    # Haemolysis type → exact column
-    if re.search(r"\b(beta|β)[-\s]?haem", t):
-        set_field("haemolysis type", "Beta")
-    elif re.search(r"\b(alpha|α)[-\s]?haem", t):
-        set_field("haemolysis type", "Alpha")
-    elif re.search(r"\b(gamma|γ)[-\s]?haem", t):
-        set_field("haemolysis type", "Gamma")
+    # Oxygen requirement (broad phrasing)
+    if re.search(r"\baerobic\b", t, flags=re.I):
+        set_field("oxygen requirement", "Aerobic")
+    elif re.search(r"\banaerobic\b", t, flags=re.I):
+        set_field("oxygen requirement", "Anaerobic")
+    elif re.search(r"\bfacultative\b", t, flags=re.I):
+        set_field("oxygen requirement", "Facultative")
+    elif re.search(r"\bmicroaerophil(ic|e)\b", t, flags=re.I):
+        set_field("oxygen requirement", "Microaerophilic")
 
     # Growth Temperature:
-    # - If "grows at X °C" appears, set numeric X.
-    # - If "no growth at Y °C" appears, DO NOT set the column (we keep numeric semantics).
-    for m in re.finditer(r"\bgrows\s+at\s+([0-9]{2,3})\s*°?\s*c", t):
+    # - Only set when phrase includes "grows at" (avoid false hit from "no growth at X °C")
+    for m in re.finditer(r"(?<!no\s)grows\s+(?:well\s+)?at\s+([0-9]{2,3})\s*°?\s*c", t, flags=re.I):
         temp_num = m.group(1)
         set_field("growth temperature", temp_num)
 
@@ -314,7 +337,7 @@ def parse_input_free_text(
     db_fields = db_fields or []
     cats = summarize_field_categories(db_fields)
 
-    # Step 1: (optional) LLM parse — we still try, but regex will enrich heavily
+    # Step 1: (optional) LLM parse — regex will enrich heavily either way
     try:
         model_choice = os.getenv("BACTAI_MODEL", "local").lower()
         if model_choice == "gpt":
