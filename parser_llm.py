@@ -922,7 +922,7 @@ def parse_input_free_text(
                 response_format={"type": "json_object"},
             )
             llm_parsed = json.loads(resp.choices[0].message.content)
-         else:
+        else:
             import ollama
             prompt = build_prompt_text(user_text, cats, prior_facts)
             # ✅ Default model is DeepSeek unless overridden
