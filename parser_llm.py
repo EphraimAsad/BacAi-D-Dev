@@ -1,5 +1,5 @@
-# parser_llm.py — Step 1.6 n++++ (Unicode/whitespace, haemolysis, NaCl, decarboxylases,
-# Esculin alias, growth fixes, Gram parsing, and robust "but not … or …" handling)
+# parser_llm.py — Step 1.6 n++++ (Unicode/whitespace, haemolysis bridge, NaCl tolerant,
+# Esculin alias, growth fixes, Gram parsing, decarboxylases, robust "but not … or/nor …")
 import os, json, re
 from typing import Dict, List
 from parser_basic import parse_input_free_text as fallback_parser
@@ -136,9 +136,10 @@ def _normalize_token(s: str) -> str:
 
 
 def _tokenize_list(s: str) -> List[str]:
-    """Split by ',', 'and', 'or', '&', 'nor'."""
+    """Split by ',', 'and', 'or', '&', 'nor', then strip trailing punctuation."""
     s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
-    return [t.strip() for t in s.split(",") if t.strip()]
+    items = [t.strip() for t in s.split(",") if t.strip()]
+    return [re.sub(r"[.,;:\s]+$", "", i) for i in items]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -193,13 +194,17 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
-    # NEGATIVE after "but not X, Y or Z / nor Z" (robust tokenization)
-    for m in re.finditer(r"(?:ferments|utilizes)[^\.]*?\bbut\s+not\s+([a-z0-9\.\-%\s,/&\sandornor]+)", t, flags=re.I):
+    # NEGATIVE after "but not X, Y or Z / nor Z" (robust tokenization & punctuation-safe)
+    for m in re.finditer(
+        r"(?:ferments|utilizes)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)", t, flags=re.I
+    ):
         segment = m.group(1)
         # convert "or"/"nor" into commas so terminal items (e.g., rhamnose) are caught
         segment = re.sub(r"\bor\b", ",", segment, flags=re.I)
         segment = re.sub(r"\bnor\b", ",", segment, flags=re.I)
         for a in _tokenize_list(segment):
+            # Strip trailing punctuation robustly
+            a = re.sub(r"[.,;:\s]+$", "", a)
             set_field_by_base(a, "Negative")
 
     # Shorthand "lactose -" / "rhamnose +"
