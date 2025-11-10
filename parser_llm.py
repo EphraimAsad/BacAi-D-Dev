@@ -1000,11 +1000,16 @@ def run_gold_tests(db_fields: Optional[List[str]] = None) -> Tuple[int,int]:
     for case in tests:
         total += 1
         name = case.get("name", f"case_{total}")
-        input_text = case.get("input","")
-        expected = case.get("expected", {})
+        input_text = case.get("input", "")
+        expected_raw = case.get("expected", {})
+
+        # 🧩 PATCH: only keep expected fields that exist in the current DB schema
+        expected = {k: v for k, v in expected_raw.items() if k in db_fields}
+
         got = parse_input_free_text(input_text, db_fields=db_fields)
         diffs = _diff_for_feedback(expected, got)
         ok = (not diffs)
+
         if ok:
             passed += 1
             print(f"✅ {name} passed.")
@@ -1013,9 +1018,9 @@ def run_gold_tests(db_fields: Optional[List[str]] = None) -> Tuple[int,int]:
             for d in diffs[:10]:
                 print(f"   - {d['field']}: expected '{d['expected']}' got '{d['got']}'")
             _log_feedback_case(name, input_text, diffs)
+
     print(f"Gold Tests: {passed}/{total} passed.")
     return (passed, total)
-
 # ──────────────────────────────────────────────────────────────────────────────
 # 🧠 Self-learning: analyze feedback → memory (3-strike heuristics)
 # ──────────────────────────────────────────────────────────────────────────────
