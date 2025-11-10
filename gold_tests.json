@@ -469,6 +469,409 @@
       "Media Grown On": "Bacteroides Bile Esculin Agar",
       "Colony Morphology": "Black"
     }
+  },
+  {
+    "name": "Staphylococcus epidermidis",
+    "input": "Gram-positive cocci in clusters, catalase positive, coagulase negative, non-haemolytic (gamma). Grows aerobically at 37 °C. Ferments glucose but not mannitol. DNase negative, urease positive, nitrate positive. Sensitive to novobiocin.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Positive",
+      "Coagulase": "Negative",
+      "Haemolysis Type": "Gamma",
+      "Haemolysis": "Negative",
+      "Oxygen Requirement": "Aerobic",
+      "Growth Temperature": "37",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Negative",
+      "DNase": "Negative",
+      "Urease": "Positive",
+      "Nitrate Reduction": "Positive"
+    }
+  },
+  {
+    "name": "Micrococcus luteus",
+    "input": "Gram-positive cocci in tetrads, catalase positive, coagulase negative, oxidase positive, yellow colonies on nutrient agar. Non-motile, strictly aerobic, grows at 30 °C. Does not ferment glucose.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Positive",
+      "Coagulase": "Negative",
+      "Oxidase": "Positive",
+      "Colony Morphology": "Yellow",
+      "Media Grown On": "Nutrient Agar",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Aerobic",
+      "Growth Temperature": "30",
+      "Glucose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Streptococcus agalactiae",
+    "input": "Gram-positive cocci in chains, catalase negative, beta-haemolytic on blood agar, CAMP positive, hippurate hydrolysis positive. Esculin negative, PYR negative. Facultative anaerobe, 37 °C.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Negative",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "CAMP": "Positive",
+      "Hippurate Hydrolysis": "Positive",
+      "Esculin Hydrolysis": "Negative",
+      "PYR": "Negative",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Growth Temperature": "37"
+    }
+  },
+  {
+    "name": "Streptococcus pneumoniae",
+    "input": "Gram-positive lancet-shaped diplococci, catalase negative, alpha-haemolytic on blood agar, optochin sensitive, bile soluble. Ferments glucose but not mannitol. Non-motile, facultative anaerobe.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Negative",
+      "Haemolysis Type": "Alpha",
+      "Haemolysis": "Positive",
+      "Optochin": "Sensitive",
+      "Bile Solubility": "Positive",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Negative",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Facultative Anaerobe"
+    }
+  },
+  {
+    "name": "Bacillus cereus",
+    "input": "Gram-positive rods, spore-forming, motile, catalase positive, oxidase variable. Beta-haemolytic, grows aerobically at 30–37 °C. Lecithinase positive, glucose positive, mannitol negative, nitrate positive.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Spore Formation": "Positive",
+      "Motility": "Positive",
+      "Catalase": "Positive",
+      "Oxidase": "Variable",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "Oxygen Requirement": "Aerobic",
+      "Growth Temperature": "30//37",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Negative",
+      "Nitrate Reduction": "Positive"
+    }
+  },
+  {
+    "name": "Clostridium difficile",
+    "input": "Gram-positive rods, spore-forming, anaerobic, catalase negative. Produces yellow colonies on CCFA agar with characteristic odour. Motile. Ferments glucose and mannitol.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Spore Formation": "Positive",
+      "Oxygen Requirement": "Anaerobic",
+      "Catalase": "Negative",
+      "Colony Morphology": "Yellow",
+      "Media Grown On": "CCFA Agar",
+      "Motility": "Positive",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Positive"
+    }
+  },
+  {
+    "name": "Erysipelothrix rhusiopathiae",
+    "input": "Gram-positive slender rods, non-spore forming, catalase negative, non-motile. Produces alpha-haemolytic colonies. H2S positive on TSI, oxidase negative. Grows microaerophilically.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Spore Formation": "Negative",
+      "Catalase": "Negative",
+      "Motility": "Negative",
+      "Haemolysis Type": "Alpha",
+      "Haemolysis": "Positive",
+      "H2S": "Positive",
+      "Oxidase": "Negative",
+      "Oxygen Requirement": "Microaerophilic"
+    }
+  },
+  {
+    "name": "Neisseria meningitidis",
+    "input": "Gram-negative diplococci, oxidase positive, catalase positive, non-motile. Grows on chocolate agar but not on nutrient agar. Capnophilic. Ferments glucose and maltose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Cocci",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Capnophilic",
+      "Media Grown On": "Chocolate Agar",
+      "Glucose Fermentation": "Positive",
+      "Maltose Fermentation": "Positive"
+    }
+  },
+  {
+    "name": "Haemophilus influenzae",
+    "input": "Gram-negative coccobacilli, oxidase positive, catalase positive, non-motile, requires X and V factors. Grows on chocolate agar, not on blood agar. Facultative anaerobe. Ferments glucose and xylose but not lactose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Media Grown On": "Chocolate Agar",
+      "Glucose Fermentation": "Positive",
+      "Xylose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Vibrio parahaemolyticus",
+    "input": "Gram-negative curved rods, oxidase positive, motile, requires NaCl for growth. Produces green colonies on TCBS agar. Ferments glucose but not lactose or sucrose. Grows at 37 °C.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Motility": "Positive",
+      "NaCl Tolerant (>=6%)": "Positive",
+      "Media Grown On": "TCBS Agar",
+      "Colony Morphology": "Green",
+      "Glucose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Sucrose Fermentation": "Negative",
+      "Growth Temperature": "37"
+    }
+  },
+  {
+    "name": "Aeromonas hydrophila",
+    "input": "Gram-negative rods, oxidase positive, catalase positive, motile, facultative anaerobe. Beta-haemolytic, indole positive, citrate positive. Ferments glucose and mannitol but not lactose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Motility": "Positive",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "Indole": "Positive",
+      "Citrate": "Positive",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Positive",
+      "Lactose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Yersinia enterocolitica",
+    "input": "Gram-negative rods, oxidase negative, catalase positive, urease positive, indole variable. Motile at 25 °C but not at 37 °C. Ferments glucose and mannitol but not lactose. Psychrotrophic.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "Urease": "Positive",
+      "Indole": "Variable",
+      "Motility": "Variable",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Growth Temperature": "25//37"
+    }
+  },
+  {
+    "name": "Acinetobacter baumannii",
+    "input": "Gram-negative coccobacilli, oxidase negative, catalase positive, non-motile, non-fermenter. Aerobic, grows on MacConkey agar forming pale colonies. Resistant to many antibiotics.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Glucose Fermentation": "Negative",
+      "Oxygen Requirement": "Aerobic",
+      "Media Grown On": "MacConkey Agar",
+      "Colony Morphology": "Pale"
+    }
+  },
+  {
+    "name": "Serratia marcescens",
+    "input": "Gram-negative rods, oxidase negative, catalase positive, motile. Produces red pigment on nutrient agar. DNase positive, citrate positive, urease variable. Ferments glucose but not lactose. Grows aerobically.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "Motility": "Positive",
+      "Colony Morphology": "Red",
+      "Media Grown On": "Nutrient Agar",
+      "DNase": "Positive",
+      "Citrate": "Positive",
+      "Urease": "Variable",
+      "Glucose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Oxygen Requirement": "Aerobic"
+    }
+  },
+  {
+    "name": "Morganella morganii",
+    "input": "Gram-negative rods, oxidase negative, catalase positive, urease positive, indole positive. Motile. Does not ferment lactose. Produces H2S negative, citrate negative, VP negative, MR positive. Facultative anaerobe.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "Urease": "Positive",
+      "Indole": "Positive",
+      "Motility": "Positive",
+      "Lactose Fermentation": "Negative",
+      "H2S": "Negative",
+      "Citrate": "Negative",
+      "VP": "Negative",
+      "Methyl Red": "Positive",
+      "Oxygen Requirement": "Facultative Anaerobe"
+    }
+  },
+  {
+    "name": "Providencia stuartii",
+    "input": "Gram-negative rods, oxidase negative, catalase positive, indole positive, urease positive. Motile, citrate positive, MR positive, VP negative. Ferments glucose but not lactose or sucrose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "Indole": "Positive",
+      "Urease": "Positive",
+      "Motility": "Positive",
+      "Citrate": "Positive",
+      "Methyl Red": "Positive",
+      "VP": "Negative",
+      "Glucose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Sucrose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Burkholderia cepacia",
+    "input": "Gram-negative rods, oxidase positive, catalase positive, motile. Produces yellow-green pigment on nutrient agar. Grows aerobically, non-fermenter. Urease positive, nitrate reduction positive.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Motility": "Positive",
+      "Colony Morphology": "Yellow Green",
+      "Media Grown On": "Nutrient Agar",
+      "Oxygen Requirement": "Aerobic",
+      "Glucose Fermentation": "Negative",
+      "Urease": "Positive",
+      "Nitrate Reduction": "Positive"
+    }
+  },
+  {
+    "name": "Helicobacter pylori",
+    "input": "Gram-negative curved rods, oxidase positive, catalase positive, urease positive, microaerophilic. Motile by multiple flagella. Grows at 37 °C. Does not ferment glucose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Urease": "Positive",
+      "Oxygen Requirement": "Microaerophilic",
+      "Motility": "Positive",
+      "Growth Temperature": "37",
+      "Glucose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Corynebacterium jeikeium",
+    "input": "Gram-positive rods, non-spore forming, catalase positive, non-motile. Aerobic, oxidase negative. Does not ferment glucose or sucrose. Urease negative.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Spore Formation": "Negative",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Aerobic",
+      "Oxidase": "Negative",
+      "Glucose Fermentation": "Negative",
+      "Sucrose Fermentation": "Negative",
+      "Urease": "Negative"
+    }
+  },
+  {
+    "name": "Actinomyces israelii",
+    "input": "Gram-positive branching rods, catalase negative, non-motile, anaerobic. Forms molar tooth colonies on blood agar. Ferments glucose and maltose but not lactose.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Catalase": "Negative",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Anaerobic",
+      "Colony Morphology": "Molar Tooth",
+      "Media Grown On": "Blood Agar",
+      "Glucose Fermentation": "Positive",
+      "Maltose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Nocardia asteroides",
+    "input": "Gram-positive branching filamentous rods, partially acid-fast, catalase positive, aerobic, non-motile. Grows on nutrient agar forming chalky white colonies. Urease positive, nitrate positive.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Aerobic",
+      "Colony Morphology": "Chalky White",
+      "Media Grown On": "Nutrient Agar",
+      "Urease": "Positive",
+      "Nitrate Reduction": "Positive"
+    }
+  },
+  {
+    "name": "Clostridium tetani",
+    "input": "Gram-positive rods with terminal spores, anaerobic, catalase negative, oxidase negative. Motile, produces swarming colonies. Does not ferment lactose or sucrose.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Spore Formation": "Positive",
+      "Oxygen Requirement": "Anaerobic",
+      "Catalase": "Negative",
+      "Oxidase": "Negative",
+      "Motility": "Positive",
+      "Colony Morphology": "Swarming",
+      "Lactose Fermentation": "Negative",
+      "Sucrose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Campylobacter coli",
+    "input": "Gram-negative curved rods, oxidase positive, catalase positive, microaerophilic. Motile, grows at 42 °C, does not grow at 25 °C. Does not ferment glucose.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Oxygen Requirement": "Microaerophilic",
+      "Motility": "Positive",
+      "Growth Temperature": "42//25",
+      "Glucose Fermentation": "Negative"
+    }
+  },
+  {
+    "name": "Pasteurella multocida",
+    "input": "Gram-negative coccobacilli, oxidase positive, catalase positive, non-motile, facultative anaerobe. Indole positive, urease positive, nitrate positive. Does not grow on MacConkey agar.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Indole": "Positive",
+      "Urease": "Positive",
+      "Nitrate Reduction": "Positive",
+      "Media Grown On": "Not MacConkey Agar"
+    }
   }
 ]
+
 
