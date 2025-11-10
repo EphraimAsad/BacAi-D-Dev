@@ -448,13 +448,23 @@ def run_gold_tests(db_fields=None):
     if not tests:
         print("No gold_tests.json found.")
         return (0, 0)
+
     db_fields = db_fields or list(ALLOWED_VALUES.keys())
     passed, total = 0, 0
+
     for case in tests:
         total += 1
         name = case.get("name", f"case_{total}")
+
+        # Parse the user input into structured fields
         got = parse_input_free_text(case["input"], db_fields=db_fields)
-        diffs = _diff_for_feedback(case["expected"], got)
+
+        # 🧩 PATCH: Only validate expected fields that exist in the current DB schema
+        expected_raw = case.get("expected", {})
+        expected = {k: v for k, v in expected_raw.items() if k in db_fields}
+
+        diffs = _diff_for_feedback(expected, got)
+
         if not diffs:
             passed += 1
             print(f"✅ {name} passed.")
@@ -463,6 +473,7 @@ def run_gold_tests(db_fields=None):
             for d in diffs:
                 print(f"   - {d['field']}: expected '{d['expected']}' got '{d['got']}'")
             _log_feedback_case(name, case["input"], diffs)
+
     print(f"Gold Tests complete: {passed}/{total}")
     return (passed, total)
 
