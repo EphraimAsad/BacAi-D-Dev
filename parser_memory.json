@@ -1051,6 +1051,73 @@
         "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
         "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
       ]
+    },
+    {
+      "timestamp": "2025-11-10 21:05:12",
+      "top_error_fields": [
+        [
+          "Media Grown On",
+          167
+        ],
+        [
+          "Growth Temperature",
+          110
+        ],
+        [
+          "Glucose Fermentation",
+          83
+        ],
+        [
+          "Lactose Fermentation",
+          71
+        ],
+        [
+          "Colony Morphology",
+          65
+        ],
+        [
+          "Sucrose Fermentation",
+          39
+        ],
+        [
+          "Spore Formation",
+          38
+        ],
+        [
+          "Haemolysis",
+          34
+        ],
+        [
+          "Shape",
+          33
+        ],
+        [
+          "Mannitol Fermentation",
+          32
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
+        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
+        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
+        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
+        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
+      ]
     }
   ],
   "auto_heuristics": {
