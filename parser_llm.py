@@ -1408,14 +1408,11 @@ def analyze_feedback_and_learn(
 # 🧬 Auto-update this file’s regex lists from learned heuristics (SAFE)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def auto_update_parser_regex(
-    memory_path: str = MEMORY_PATH,
-    parser_file: str = __file__
-) -> None:
+def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
-    Automatically patch regex pattern lists when heuristics reach threshold.
-    - Safe text substitution that appends new r"...", lines to *_PATTERNS blocks.
-    - Runs sanitizers afterward to avoid unterminated strings or bad escapes.
+    Automatically patch regex pattern lists when heuristics reach threshold (safe version).
+    This version ensures multi-word field names (e.g. 'mannitol fermentation') 
+    become regex fragments with flexible whitespace (\\s+), not literal escaped spaces.
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
@@ -1430,6 +1427,7 @@ def auto_update_parser_regex(
         print(f"❌ Could not read parser file: {e}")
         return
 
+    # Map of field → regex list variable names
     pattern_lists = {
         "oxidase": "OXIDASE_PATTERNS",
         "catalase": "CATALASE_PATTERNS",
@@ -1455,6 +1453,8 @@ def auto_update_parser_regex(
     for field, rule in auto_heuristics.items():
         field_lower = field.lower()
         pattern_list = None
+
+        # Determine which regex list to patch into
         for key, list_name in pattern_lists.items():
             if key in field_lower:
                 pattern_list = list_name
@@ -1462,37 +1462,37 @@ def auto_update_parser_regex(
         if not pattern_list:
             continue
 
-        # Build a learned regex (raw string) that keys off the field name
-        want_negative = any(k in rule["rule"].lower() for k in ["negative", "not"])
-        want_positive = "positive" in rule["rule"].lower()
+        # ✅ Use flexible whitespace field fragment (mannitol\s+fermentation)
+        frag = _regexify_field_name_for_whitespace(field_lower)
 
-        if want_negative:
-            # r"\bfield\b.*(?:negative|not\s+detected|not\s+produced)"
-            learned_regex = rf'r"\b{re.escape(field_lower)}\b.*(?:negative|not\s+detected|not\s+produced)"'
-        elif want_positive:
-            learned_regex = rf'r"\b{re.escape(field_lower)}\b.*(?:positive|detected|produced)"'
+        # Build regex safely
+        rule_txt = rule.get("rule", "").lower()
+        if any(k in rule_txt for k in ["negative", "not"]):
+            learned = rf"\b{frag}\b.*(?:negative|not\s+detected|not\s+produced)"
+        elif "positive" in rule_txt:
+            learned = rf"\b{frag}\b.*(?:positive|detected|produced)"
         else:
-            learned_regex = rf'r"\b{re.escape(field_lower)}\b.*reaction"'
+            learned = rf"\b{frag}\b.*reaction"
 
-        insertion = f"    {learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
+        insertion = f'    r"{learned}",  # auto-learned {now} ({rule["count"]}x)\n'
 
-        # Insert into the correct list using a minimal regex
-        block_pattern = re.compile(rf"({pattern_list}\s*=\s*\[)(.*?)(\])", flags=re.S)
-        def _append(m):
-            before, body, after = m.group(1), m.group(2), m.group(3)
-            # Avoid duplicates
-            if learned_regex in body:
-                return m.group(0)
-            return before + body + insertion + after
+        # Regex to locate the correct pattern list block
+        pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
 
-        code_new, n = block_pattern.subn(_append, code, count=1)
-        if n > 0:
-            code = code_new
+        new_code, count = re.subn(
+            pattern_block_regex,
+            lambda m: m.group(1) + m.group(2) + insertion + m.group(3),
+            code,
+            flags=re.S,
+        )
+
+        if count > 0:
+            code = new_code
             updated += 1
             print(f"✅ Added learned pattern for {field} → {pattern_list}")
 
+    # Append summary footer & sanitize if updated
     if updated > 0:
-        # Append summary block
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f, r in auto_heuristics.items():
             code += f"# {f}: {r['rule']} (seen {r['count']}x)\n"
@@ -1501,16 +1501,27 @@ def auto_update_parser_regex(
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
             print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
+
+            # Sanitize any residual malformed lines
+            _sanitize_parser_file(parser_file)
+
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
-            return
-
-        # Run sanitizers AFTER writing
-        _sanitize_parser_file(parser_file)
-        _sanitize_auto_learned_patterns(parser_file)
-        _repair_parser_file(parser_file)
     else:
         print("ℹ️ No matching pattern lists found; no changes made.")
+
+
+def _regexify_field_name_for_whitespace(field: str) -> str:
+    """
+    Converts multi-word field names into regex fragments that allow flexible whitespace.
+    Example:
+        'mannitol fermentation' → 'mannitol\\s+fermentation'
+        'nitrate reduction' → 'nitrate\\s+reduction'
+    """
+    import re
+    tokens = re.split(r"\s+", field.strip())
+    tokens = [re.escape(t) for t in tokens if t]
+    return r"\s+".join(tokens) if tokens else re.escape(field.strip())
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Convenience bootstrap: run learning + optional gold tests + auto-patch
