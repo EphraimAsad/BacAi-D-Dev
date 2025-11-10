@@ -17,6 +17,8 @@ from engine import BacteriaIdentifier
 from parser_llm import parse_input_free_text as parse_llm_input_free_text
 # Deterministic fallback parser
 from parser_basic import parse_input_free_text as parse_basic_input_free_text
+from parser_llm import enable_self_learning_autopatch, parse_input_free_text as parse_llm_input_free_text
+enable_self_learning_autopatch(run_tests=False)  # safe: runs learning, patches, sanitizes
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CONFIG
