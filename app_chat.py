@@ -1,4 +1,9 @@
-# app_chat.py — Step 1.6 (Dynamic Schema + Gold Spec Tests)
+# app_chat.py — LLM-first chat (Ollama Cloud) with Basic regex fallback
+# - Removes ChatGPT/Cloud usage entirely
+# - Displays Active Parser (LLM via Ollama or Basic regex) as read-only info
+# - Gold Spec Tests run from gold_tests.json and trigger self-learning + auto-regex patch
+# - Uses dynamic schema based on current Excel DB columns
+
 import os
 import re
 import json
@@ -8,19 +13,29 @@ import pandas as pd
 import streamlit as st
 
 from engine import BacteriaIdentifier
-from parser_llm import parse_input_free_text  # Dynamic schema + feedback loop
+# LLM-first parser (uses Ollama Cloud inside)
+from parser_llm import parse_input_free_text as parse_llm_input_free_text
+# Deterministic fallback parser
+from parser_basic import parse_input_free_text as parse_basic_input_free_text
 
-# ---- PAGE CONFIG ----
+# ──────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="BactAI-D — Language Reasoning (Chat)", layout="wide")
 
-# ---- LOAD DATA ----
+# Default model name for Ollama Cloud (read from env, keep same default you used before)
+DEFAULT_LOCAL_MODEL = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DATA LOADING
+# ──────────────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data(path, last_modified):
     df = pd.read_excel(path)
     df.columns = [c.strip() for c in df.columns]
     return df
 
-# Resolve data path
+# Resolve data path (prefer ./data/bacteria_db.xlsx, fallback ./bacteria_db.xlsx)
 primary_path = os.path.join("data", "bacteria_db.xlsx")
 fallback_path = os.path.join("bacteria_db.xlsx")
 data_path = primary_path if os.path.exists(primary_path) else fallback_path
@@ -33,9 +48,11 @@ except FileNotFoundError:
 
 db = load_data(data_path, last_modified)
 eng = BacteriaIdentifier(db)
-db_fields = [c for c in db.columns if c.lower() != "genus"]
+db_fields = [c for c in db.columns if c.strip().lower() != "genus"]
 
-# ---- HEADER ----
+# ──────────────────────────────────────────────────────────────────────────────
+# HEADER
+# ──────────────────────────────────────────────────────────────────────────────
 st.title("🧫 BactAI-D — Language Reasoning (Chat)")
 st.caption(f"📅 Database last updated: {datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')}")
 st.markdown(
@@ -52,7 +69,9 @@ st.markdown(
 """
 )
 
-# ---- SESSION STATE ----
+# ──────────────────────────────────────────────────────────────────────────────
+# SESSION STATE
+# ──────────────────────────────────────────────────────────────────────────────
 if "facts" not in st.session_state:
     st.session_state.facts = {}
 if "history" not in st.session_state:
@@ -63,32 +82,31 @@ if "gold_results" not in st.session_state:
     st.session_state.gold_results = None
 if "gold_summary" not in st.session_state:
     st.session_state.gold_summary = None
+if "active_parser" not in st.session_state:
+    # Display-only: "LLM (Ollama: <model>)" or "Basic (regex)"
+    st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
 
-# ---- SIDEBAR: PARSER SETTINGS ----
-st.sidebar.markdown("### 🧠 Parser Settings")
-parser_choice = st.sidebar.radio("Choose Parser Model", ["Local Llama (via Ollama)", "GPT (Cloud)"], index=0)
-os.environ["BACTAI_MODEL"] = "gpt" if "GPT" in parser_choice else "local"
-os.environ["OPENAI_MODEL"] = "gpt-4o-mini"
-os.environ["LOCAL_MODEL"] = "llama3"
+# ──────────────────────────────────────────────────────────────────────────────
+# SIDEBAR — Active Parser (display-only) & tools
+# ──────────────────────────────────────────────────────────────────────────────
+st.sidebar.markdown("### ⚙️ Runtime")
+# Read-only, shows which backend the *last* parse used (updated per message)
+st.sidebar.text_input(
+    "Active Parser",
+    value=st.session_state.active_parser,
+    disabled=True,
+    help="The parser currently used by the app. If LLM is unavailable, it falls back to Basic (regex)."
+)
 
-with st.sidebar.expander("🧩 Active Models (info)", expanded=False):
-    st.text_input("OpenAI model", value=os.environ["OPENAI_MODEL"], disabled=True)
-    st.text_input("Local model (Ollama)", value=os.environ["LOCAL_MODEL"], disabled=True)
+with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
+    st.write(", ".join(sorted(db_fields)))
 
-st.sidebar.markdown("---")
-
-# ---- SIDEBAR: PARSED FIELDS ----
 with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True):
     if st.session_state.facts:
         st.json(st.session_state.facts)
     else:
         st.caption("No parsed fields yet. Send a message to begin.")
 
-# ---- SIDEBAR: SUPPORTED TESTS ----
-with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
-    st.write(", ".join(sorted(db_fields)))
-
-# ---- SIDEBAR: RESET & GOLD TESTS ----
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Reset conversation"):
     st.session_state.facts = {}
@@ -96,13 +114,16 @@ if st.sidebar.button("🔄 Reset conversation"):
     st.session_state.last_results = None
     st.session_state.gold_results = None
     st.session_state.gold_summary = None
+    st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
     st.rerun()
 
-# 🧪 GOLD SPEC TESTS
+# ──────────────────────────────────────────────────────────────────────────────
+# GOLD SPEC TESTS — runs from gold_tests.json and triggers self-learning
+# ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=False):
-    # Run test suite
-    if st.button("▶️ Run Gold Spec Tests"):
+    if st.button("▶️ Run Gold Spec Tests & Self-Learn"):
         try:
+            # Load test cases from file
             with open("gold_tests.json", "r", encoding="utf-8") as f:
                 tests = json.load(f)
 
@@ -111,8 +132,27 @@ with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=Fa
             passed = 0
 
             for case in tests:
-                parsed = parse_input_free_text(case["input"], db_fields=db_fields)
+                text = case["input"]
                 expected = case.get("expected", {})
+
+                # Try LLM first, then fallback to Basic
+                used_backend = None
+                try:
+                    parsed = parse_llm_input_free_text(
+                        text,
+                        prior_facts={},
+                        db_fields=db_fields
+                    )
+                    used_backend = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
+                except Exception:
+                    parsed = parse_basic_input_free_text(
+                        text,
+                        prior_facts={},
+                        db_fields=db_fields
+                    )
+                    used_backend = "Basic (regex)"
+
+                # Compare only expected keys (gold standard)
                 mismatched = []
                 for key, exp_val in expected.items():
                     got_val = parsed.get(key)
@@ -120,21 +160,34 @@ with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=Fa
                         mismatched.append({"field": key, "got": got_val, "expected": exp_val})
 
                 if mismatched:
-                    results.append({"name": case["name"], "status": "❌", "mismatches": mismatched, "parsed": parsed, "expected": expected})
-                    feedback.append({"name": case["name"], "text": case["input"], "errors": mismatched})
+                    results.append({
+                        "name": case.get("name", "Unnamed Case"),
+                        "status": "❌",
+                        "mismatches": mismatched,
+                        "parsed": parsed,
+                        "expected": expected,
+                        "backend": used_backend
+                    })
+                    feedback.append({"name": case.get("name", "Unnamed Case"), "text": text, "errors": mismatched})
                 else:
-                    results.append({"name": case["name"], "status": "✅", "mismatches": [], "parsed": parsed, "expected": expected})
+                    results.append({
+                        "name": case.get("name", "Unnamed Case"),
+                        "status": "✅",
+                        "mismatches": [],
+                        "parsed": parsed,
+                        "expected": expected,
+                        "backend": used_backend
+                    })
                     passed += 1
 
-            # Save feedback file
+            # Save feedback for learning
             with open("parser_feedback.json", "w", encoding="utf-8") as fb:
                 json.dump(feedback, fb, indent=2)
-            from parser_llm import analyze_feedback_and_learn
+
+            # Learning + auto-regex patch in parser_llm.py
+            from parser_llm import analyze_feedback_and_learn, auto_update_parser_regex
             analyze_feedback_and_learn("parser_feedback.json", "parser_memory.json")
-            from parser_llm import auto_update_parser_regex
             auto_update_parser_regex("parser_memory.json", "parser_llm.py")
-
-
 
             st.session_state.gold_results = results
             st.session_state.gold_summary = (passed, len(tests))
@@ -156,16 +209,16 @@ with st.sidebar.expander("🧪 Gold Spec Tests (Parser Validation)", expanded=Fa
         except Exception as e:
             st.error(f"Could not clear memory: {e}")
 
-# ---- DISPLAY GOLD TEST RESULTS ----
+# Display Gold Test results in main area (when present)
 if st.session_state.gold_results is not None:
     passed, total = st.session_state.gold_summary or (0, 0)
     st.markdown("## 🧪 Gold Test Results (Chat)")
     st.markdown(f"**Summary:** {passed}/{total} passed")
     for r in st.session_state.gold_results:
         if r["status"] == "✅":
-            st.markdown(f"**{r['name']}** — ✅ Passed all checks")
+            st.markdown(f"**{r['name']}** — ✅ Passed all checks · _{r.get('backend','')}_")
         else:
-            st.markdown(f"**{r['name']}** — ❌ Mismatches:")
+            st.markdown(f"**{r['name']}** — ❌ Mismatches · _{r.get('backend','')}_")
             for m in r["mismatches"]:
                 st.markdown(f"- **{m['field']}**: got `{m['got']}`, expected `{m['expected']}`")
             with st.expander("Show parsed vs expected"):
@@ -173,24 +226,54 @@ if st.session_state.gold_results is not None:
 
 st.sidebar.markdown("---")
 
-# ---- CHAT HISTORY ----
+# ──────────────────────────────────────────────────────────────────────────────
+# CHAT HISTORY
+# ──────────────────────────────────────────────────────────────────────────────
 for msg in st.session_state.history:
     st.chat_message(msg["role"]).markdown(msg["content"])
 
-# ---- CHAT INPUT ----
+# ──────────────────────────────────────────────────────────────────────────────
+# CHAT INPUT → Parse (LLM first, fallback to Basic), identify, reply
+# ──────────────────────────────────────────────────────────────────────────────
+def parse_with_fallback(user_text: str, prior_facts: dict, db_fields: list) -> tuple[dict, str]:
+    """
+    Try LLM (Ollama Cloud) first. If it fails in any way, fall back to Basic regex.
+    Returns: (parsed_dict, backend_label)
+    """
+    # Attempt LLM parse
+    try:
+        parsed = parse_llm_input_free_text(
+            user_text,
+            prior_facts=prior_facts,
+            db_fields=db_fields
+        )
+        return parsed, f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
+    except Exception:
+        # Fallback to deterministic parser
+        parsed = parse_basic_input_free_text(
+            user_text,
+            prior_facts=prior_facts,
+            db_fields=db_fields
+        )
+        return parsed, "Basic (regex)"
+
 user_msg = st.chat_input("Tell me your observations…")
 if user_msg:
     st.session_state.history.append({"role": "user", "content": user_msg})
     st.chat_message("user").markdown(user_msg)
 
-    # ⬇️ Parse free text using dynamic schema + learning feedback
-    parsed = parse_input_free_text(user_msg, prior_facts=st.session_state.facts, db_fields=db_fields)
+    # Parse (LLM first, fallback to Basic)
+    parsed, backend_label = parse_with_fallback(user_msg, st.session_state.facts, db_fields)
+    # Update the visible indicator to reflect what we actually used this turn
+    st.session_state.active_parser = backend_label
+
+    # Identify
     results = eng.identify(parsed)
 
     if not results:
         reply = (
-            "I couldn't find a good match with the current information. "
-            "Try adding more descriptive test results or mention colony colour, growth, etc."
+            "I couldn't find a strong match with the current information. "
+            "Try adding more descriptive test results (e.g., ONPG, NaCl tolerance, haemolysis type, colony colour/size, media, etc.)."
         )
     else:
         top = results[0]
@@ -202,6 +285,7 @@ if user_msg:
             f"**Top match:** {top.genus} — {top.confidence_percent()}% (true: {top.true_confidence()}%)",
             f"**Other candidates:** {ranked_str}",
             f"**Why:** {reasoning}",
+            f"_Parsed by: {backend_label}_",
         ]
         if next_tests:
             reply_lines.append(f"**Next tests to differentiate:** {next_tests}")
@@ -215,7 +299,9 @@ if user_msg:
     st.session_state.history.append({"role": "assistant", "content": reply})
     st.chat_message("assistant").markdown(reply)
 
-# ---- FOOTER ----
+# ──────────────────────────────────────────────────────────────────────────────
+# FOOTER
+# ──────────────────────────────────────────────────────────────────────────────
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>", unsafe_allow_html=True)
 
@@ -265,6 +351,6 @@ def auto_git_commit():
     except Exception as e:
         print(f"⚠️ Auto-commit failed: {e}")
 
-# Call after learning updates
+# Call after learning updates (safe to call every run; pushes only if diffs exist)
 auto_git_commit()
 st.sidebar.success("✅ GitHub auto-update completed. View latest commit on GitHub.")
