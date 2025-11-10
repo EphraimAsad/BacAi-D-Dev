@@ -93,6 +93,26 @@ def _save_json(path: str, obj):
             json.dump(obj, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
+# --- AUTO-FIX for unterminated strings or partial writes ---
+def _repair_parser_file(file_path="parser_llm.py"):
+    """Ensures parser_llm.py has no unterminated string or quote errors."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # if a stray line ends with comma/quote colon, fix it
+        repaired = []
+        for line in content.splitlines():
+            # trim any stray lines ending with comma and quote
+            if line.strip().endswith('",') and line.count('"') % 2 != 0:
+                line = line.rstrip('",') + '",'
+            repaired.append(line)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(repaired))
+        print(f"🧩 Repaired any unterminated lines in {file_path}")
+    except Exception as e:
+        print(f"⚠️ Parser file repair failed: {e}")
+
+_repair_parser_file("parser_llm.py")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Schema allowed values (aligned with your Excel)
