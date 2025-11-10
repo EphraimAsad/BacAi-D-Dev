@@ -271,6 +271,7 @@ H2S_PATTERNS = [
     r"\bh\s*2\s*s\s+(?:\-|negative|not\s+detected|not\s+produced)\b",
     r"\bproduces\s+h\s*2\s*s\b",
     r"\bno\s+h\s*2\s*s\s+production\b",
+    r"\\bh2s\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
 ]
 NITRATE_PATTERNS = [
     r"\breduces\s+nitrate\b",
@@ -281,14 +282,17 @@ NITRATE_PATTERNS = [
 ESCULIN_PATTERNS = [
     r"\besculin\s+hydrolysis\s*(?:\+|positive)\b",
     r"\besculin\s+hydrolysis\s*(?:\-|negative)\b",
+    r"\\besculin\ hydrolysis\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 DNASE_PATTERNS = [
     r"\bdnase\s*(?:test)?\s*(?:\+|positive)\b",
     r"\bdnase\s*(?:test)?\s*(?:\-|negative)\b",
+    r"\\bdnase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 GELATIN_PATTERNS = [
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\+|positive)\b",
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\-|negative)\b",
+    r"\\bgelatin\ hydrolysis\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (15x)
 ]
 LIPASE_PATTERNS = [
     r"\blipase\s*(?:test)?\s*(?:\+|positive)\b",
@@ -304,9 +308,20 @@ DECARBOXYLASE_PATTERNS = [
     r"\barginine\s+dihydrolase\s+(?:\+|positive|detected)\b",
     r"\barginine\s+dihydrolase\s+(?:\-|negative|not\s+detected)\b",
     r"\b(ldc|odc|adh)\s*(?:\+|positive|-|negative)\b",
+    r"\\bornitihine\ decarboxylase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 FERMENTATION_PATTERNS = [
-    r"(?:ferments?|utilizes?|produces?\s+acid\s+from)\s+([a-z0-9\.\-%\s,/&]+)(?:\.|;|,|$)",
+    r"(?:ferments?|utilizes?|produces?\s+acid\s+from)\s+([a-z0-9\.\-%\s,/&    r"\\blactose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)
+    r"\\bxylose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (16x)
+    r"\\bmannitol\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (32x)
+    r"\\bsucrose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (39x)
+    r"\\bsorbitol\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (10x)
+    r"\\barabinose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\\bglucose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (83x)
+    r"\\bfructose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (3x)
+    r"\\bmaltose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
+    r"\\brhamnose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
+]+)(?:\.|;|,|$)",
     r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
     r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)",
     r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",  # shorthand
@@ -1178,3 +1193,36 @@ if __name__ == "__main__":
         auto_update_parser_regex()
         sys.exit(0)
     print("parser_llm.py loaded. Use --test to run gold tests (learns & patches).")
+
+
+# === AUTO-LEARNED PATTERNS SUMMARY (2025-11-10 21:17:08) ===
+# DNase: Add stronger regex matching for 'DNase' with negation/positive terms (seen 4x)
+# Lactose Fermentation: Add stronger regex matching for 'Lactose Fermentation' with negation/positive terms (seen 71x)
+# NaCl Tolerant (>=6%): Add stronger regex matching for 'NaCl Tolerant (>=6%)' with negation/positive terms (seen 20x)
+# Motility: Add stronger regex matching for 'Motility' with negation/positive terms (seen 11x)
+# Spore Formation: Add stronger regex matching for 'Spore Formation' with negation/positive terms (seen 38x)
+# Media Grown On: Add stronger regex matching for 'Media Grown On' with negation/positive terms (seen 167x)
+# Xylose Fermentation: Add stronger regex matching for 'Xylose Fermentation' with negation/positive terms (seen 16x)
+# Mannitol Fermentation: Add stronger regex matching for 'Mannitol Fermentation' with negation/positive terms (seen 32x)
+# Gelatin Hydrolysis: Add stronger regex matching for 'Gelatin Hydrolysis' with negation/positive terms (seen 15x)
+# Growth Temperature: Add stronger regex matching for 'Growth Temperature' with negation/positive terms (seen 110x)
+# Haemolysis Type: Add stronger regex matching for 'Haemolysis Type' with negation/positive terms (seen 4x)
+# Haemolysis: Add stronger regex matching for 'Haemolysis' with negation/positive terms (seen 34x)
+# Esculin Hydrolysis: Add stronger regex matching for 'Esculin Hydrolysis' with negation/positive terms (seen 4x)
+# Colony Morphology: Add stronger regex matching for 'Colony Morphology' with negation/positive terms (seen 65x)
+# Oxygen Requirement: Add stronger regex matching for 'Oxygen Requirement' with negation/positive terms (seen 32x)
+# Sucrose Fermentation: Add stronger regex matching for 'Sucrose Fermentation' with negation/positive terms (seen 39x)
+# H2S: Add stronger regex matching for 'H2S' with negation/positive terms (seen 5x)
+# Sorbitol Fermentation: Add stronger regex matching for 'Sorbitol Fermentation' with negation/positive terms (seen 10x)
+# Capsule: Add stronger regex matching for 'Capsule' with negation/positive terms (seen 4x)
+# Arabinose Fermentation: Add stronger regex matching for 'Arabinose Fermentation' with negation/positive terms (seen 4x)
+# Shape: Add stronger regex matching for 'Shape' with negation/positive terms (seen 33x)
+# Glucose Fermentation: Add stronger regex matching for 'Glucose Fermentation' with negation/positive terms (seen 83x)
+# Odour: Add stronger regex matching for 'Odour' with negation/positive terms (seen 6x)
+# Growth Factors: Add stronger regex matching for 'Growth Factors' with negation/positive terms (seen 3x)
+# Fructose Fermentation: Add stronger regex matching for 'Fructose Fermentation' with negation/positive terms (seen 3x)
+# Glucose Oxidation: Add stronger regex matching for 'Glucose Oxidation' with negation/positive terms (seen 5x)
+# Maltose Fermentation: Add stronger regex matching for 'Maltose Fermentation' with negation/positive terms (seen 5x)
+# Gram Stain: Add stronger regex matching for 'Gram Stain' with negation/positive terms (seen 3x)
+# Ornitihine Decarboxylase: Add stronger regex matching for 'Ornitihine Decarboxylase' with negation/positive terms (seen 4x)
+# Rhamnose Fermentation: Add stronger regex matching for 'Rhamnose Fermentation' with negation/positive terms (seen 5x)
