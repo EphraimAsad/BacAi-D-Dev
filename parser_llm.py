@@ -1122,7 +1122,8 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             learned_regex = rf'r"\b{re.escape(field_lower)}\s+reaction\b"'
 
         insertion = f"    {learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
-        pattern_block_regex = rf"({pattern_list}\s*=\s*\[)([^\]]*)(\])"
+        # Safe, escaped version to avoid "bad escape" errors
+        pattern_block_regex = rf"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
         new_code, count = re.subn(pattern_block_regex, rf"\1\2{insertion}\3", code, flags=re.S)
         if count > 0:
             code = new_code
