@@ -267,3 +267,4 @@ def auto_git_commit():
 
 # Call after learning updates
 auto_git_commit()
+st.sidebar.success("✅ GitHub auto-update completed. View latest commit on GitHub.")
