@@ -47,7 +47,7 @@ def _sanitize_parser_file(file_path):
 
         fixed_lines = []
         for line in lines:
-            if 'r"' in line and not line.strip().endswith(('")', '",', '"')):
+            if 'r"' in line and not line.strip().endswith(('\")', '\",', '"')):
                 if '"' in line and not line.strip().endswith('",'):
                     line = line.rstrip() + '",\n'
             fixed_lines.append(line)
