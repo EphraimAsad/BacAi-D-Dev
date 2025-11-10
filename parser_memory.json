@@ -1,1461 +1,7 @@
 {
   "history": [
     {
-      "timestamp": "2025-11-10 00:25:04",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:25:07",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:25:10",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:25:14",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:27:36",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:27:48",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:31:18",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:31:24",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:31:34",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:31:37",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:31:55",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:54:19",
-      "top_error_fields": [
-        [
-          "Motility",
-          3
-        ],
-        [
-          "Media Grown On",
-          3
-        ],
-        [
-          "DNase",
-          1
-        ],
-        [
-          "Lactose Fermentation",
-          1
-        ],
-        [
-          "H2S",
-          1
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:56:23",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:57:46",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:57:52",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:07",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:40",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:44",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:46",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:48",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:53",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 00:58:56",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 01:00:55",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          16
-        ],
-        [
-          "Growth Temperature",
-          6
-        ],
-        [
-          "Lactose Fermentation",
-          5
-        ],
-        [
-          "Motility",
-          4
-        ],
-        [
-          "H2S",
-          4
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 20:48:53",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 20:56:43",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 20:58:34",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:05:12",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:06:32",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:07:29",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:10:08",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:10:15",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 21:17:08",
-      "top_error_fields": [
-        [
-          "Media Grown On",
-          167
-        ],
-        [
-          "Growth Temperature",
-          110
-        ],
-        [
-          "Glucose Fermentation",
-          83
-        ],
-        [
-          "Lactose Fermentation",
-          71
-        ],
-        [
-          "Colony Morphology",
-          65
-        ],
-        [
-          "Sucrose Fermentation",
-          39
-        ],
-        [
-          "Spore Formation",
-          38
-        ],
-        [
-          "Haemolysis",
-          34
-        ],
-        [
-          "Shape",
-          33
-        ],
-        [
-          "Mannitol Fermentation",
-          32
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Gelatin Hydrolysis' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Growth Temperature' — often parsed '' instead of '37'",
-        "Consider adjusting pattern for 'Media Grown On' — often parsed 'nutrient agar; macconkey agar; grows on nutrient agar and macconkey agar' instead of 'nutrient agar; macconkey agar'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Haemolysis Type' — often parsed 'beta' instead of 'gamma'",
-        "Consider adjusting pattern for 'Haemolysis' — often parsed 'positive' instead of 'variable'",
-        "Consider adjusting pattern for 'Esculin Hydrolysis' — often parsed '' instead of 'positive'"
-      ]
-    },
-    {
-      "timestamp": "2025-11-10 22:26:32",
+      "timestamp": "2025-11-10 23:52:00",
       "top_error_fields": [
         [
           "Glucose Fermentation",
@@ -1520,643 +66,171 @@
         "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
         "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
       ]
+    }
+  ],
+  "auto_heuristics": {
+    "Gram Stain": {
+      "rule": "Add stronger regex matching for 'Gram Stain' with negation/positive terms",
+      "count": 116
     },
-    {
-      "timestamp": "2025-11-10 22:54:07",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Urease": {
+      "rule": "Add stronger regex matching for 'Urease' with negation/positive terms",
+      "count": 38
     },
-    {
-      "timestamp": "2025-11-10 22:57:46",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "DNase": {
+      "rule": "Add stronger regex matching for 'DNase' with negation/positive terms",
+      "count": 4
     },
-    {
-      "timestamp": "2025-11-10 23:07:01",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Methyl Red": {
+      "rule": "Add stronger regex matching for 'Methyl Red' with negation/positive terms",
+      "count": 54
     },
-    {
-      "timestamp": "2025-11-10 23:07:09",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Mannitol Fermentation": {
+      "rule": "Add stronger regex matching for 'Mannitol Fermentation' with negation/positive terms",
+      "count": 77
     },
-    {
-      "timestamp": "2025-11-10 23:07:17",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Sucrose Fermentation": {
+      "rule": "Add stronger regex matching for 'Sucrose Fermentation' with negation/positive terms",
+      "count": 99
     },
-    {
-      "timestamp": "2025-11-10 23:11:31",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Lactose Fermentation": {
+      "rule": "Add stronger regex matching for 'Lactose Fermentation' with negation/positive terms",
+      "count": 139
     },
-    {
-      "timestamp": "2025-11-10 23:14:11",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "NaCl Tolerant (>=6%)": {
+      "rule": "Add stronger regex matching for 'NaCl Tolerant (>=6%)' with negation/positive terms",
+      "count": 20
     },
-    {
-      "timestamp": "2025-11-10 23:14:16",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "Motility": {
+      "rule": "Add stronger regex matching for 'Motility' with negation/positive terms",
+      "count": 11
     },
-    {
-      "timestamp": "2025-11-10 23:20:46",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
-          99
-        ],
-        [
-          "Mannitol Fermentation",
-          77
-        ],
-        [
-          "Methyl Red",
-          54
-        ]
-      ],
-      "suggestions": [
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
-        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
-        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
-        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
-        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
-        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
-      ]
+    "H2S": {
+      "rule": "Add stronger regex matching for 'H2S' with negation/positive terms",
+      "count": 11
     },
-    {
-      "timestamp": "2025-11-10 23:21:29",
-      "top_error_fields": [
-        [
-          "Glucose Fermentation",
-          195
-        ],
-        [
-          "Media Grown On",
-          187
-        ],
-        [
-          "Colony Morphology",
-          156
-        ],
-        [
-          "Lactose Fermentation",
-          139
-        ],
-        [
-          "Nitrate Reduction",
-          135
-        ],
-        [
-          "Gram Stain",
-          116
-        ],
-        [
-          "Growth Temperature",
-          111
-        ],
-        [
-          "Sucrose Fermentation",
+    "Nitrate Reduction": {
+      "rule": "Add stronger regex matching for 'Nitrate Reduction' with negation/positive terms",
+      "count": 135
+    },
+    "Xylose Fermentation": {
+      "rule": "Add stronger regex matching for 'Xylose Fermentation' with negation/positive terms",
+      "count": 28
+    },
+    "Arabinose Fermentation": {
+      "rule": "Add stronger regex matching for 'Arabinose Fermentation' with negation/positive terms",
+      "count": 12
+    },
+    "ONPG": {
+      "rule": "Add stronger regex matching for 'ONPG' with negation/positive terms",
+      "count": 18
+    },
+    "Lysine Decarboxylase": {
+      "rule": "Add stronger regex matching for 'Lysine Decarboxylase' with negation/positive terms",
+      "count": 9
+    },
+    "Spore Formation": {
+      "rule": "Add stronger regex matching for 'Spore Formation' with negation/positive terms",
+      "count": 38
+    },
+    "Media Grown On": {
+      "rule": "Add stronger regex matching for 'Media Grown On' with negation/positive terms",
+      "count": 187
+    },
+    "Esculin Hydrolysis": {
+      "rule": "Add stronger regex matching for 'Esculin Hydrolysis' with negation/positive terms",
+      "count": 17
+    },
+    "Gelatin Hydrolysis": {
+      "rule": "Add stronger regex matching for 'Gelatin Hydrolysis' with negation/positive terms",
+      "count": 21
+    },
+    "Dnase": {
+      "rule": "Add stronger regex matching for 'Dnase' with negation/positive terms",
+      "count": 33
+    },
+    "Growth Temperature": {
+      "rule": "Add stronger regex matching for 'Growth Temperature' with negation/positive terms",
+      "count": 111
+    },
+    "Colony Morphology": {
+      "rule": "Add stronger regex matching for 'Colony Morphology' with negation/positive terms",
+      "count": 156
+    },
+    "Haemolysis Type": {
+      "rule": "Add stronger regex matching for 'Haemolysis Type' with negation/positive terms",
+      "count": 4
+    },
+    "Haemolysis": {
+      "rule": "Add stronger regex matching for 'Haemolysis' with negation/positive terms",
+      "count": 34
+    },
+    "Glucose Fermentation": {
+      "rule": "Add stronger regex matching for 'Glucose Fermentation' with negation/positive terms",
+      "count": 195
+    },
+    "Oxygen Requirement": {
+      "rule": "Add stronger regex matching for 'Oxygen Requirement' with negation/positive terms",
+      "count": 49
+    },
+    "Sorbitol Fermentation": {
+      "rule": "Add stronger regex matching for 'Sorbitol Fermentation' with negation/positive terms",
+      "count": 11
+    },
+    "Capsule": {
+      "rule": "Add stronger regex matching for 'Capsule' with negation/positive terms",
+      "count": 4
+    },
+    "Shape": {
+      "rule": "Add stronger regex matching for 'Shape' with negation/positive terms",
+      "count": 33
+    },
+    "Maltose Fermentation": {
+      "rule": "Add stronger regex matching for 'Maltose Fermentation' with negation/positive terms",
+      "count": 25
+    },
+    "Indole": {
+      "rule": "Add stronger regex matching for 'Indole' with negation/positive terms",
+      "count": 12
+    },
+    "Oxidase": {
+      "rule": "Add stronger regex matching for 'Oxidase' with negation/positive terms",
+      "count": 14
+    },
+    "Citrate": {
+      "rule": "Add stronger regex matching for 'Citrate' with negation/positive terms",
+      "count": 8
+    },
+    "Odour": {
+      "rule": "Add stronger regex matching for 'Odour' with negation/positive terms",
+      "count": 6
+    },
+    "Growth Factors": {
+      "rule": "Add stronger regex matching for 'Growth Factors' with negation/positive terms",
+      "count": 3
+    },
+    "Fructose Fermentation": {
+      "rule": "Add stronger regex matching for 'Fructose Fermentation' with negation/positive terms",
+      "count": 3
+    },
+    "Glucose Oxidation": {
+      "rule": "Add stronger regex matching for 'Glucose Oxidation' with negation/positive terms",
+      "count": 5
+    },
+    "Rhamnose Fermentation": {
+      "rule": "Add stronger regex matching for 'Rhamnose Fermentation' with negation/positive terms",
+      "count": 8
+    },
+    "Ornitihine Decarboxylase": {
+      "rule": "Add stronger regex matching for 'Ornitihine Decarboxylase' with negation/positive terms",
+      "count": 8
+    },
+    "Arginine dihydrolase": {
+      "rule": "Add stronger regex matching for 'Arginine dihydrolase' with negation/positive terms",
+      "count": 6
+    }
+  }
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,
           99
         ],
         [
@@ -2595,6 +669,207 @@
     },
     {
       "timestamp": "2025-11-10 23:50:07",
+      "top_error_fields": [
+        [
+          "Glucose Fermentation",
+          195
+        ],
+        [
+          "Media Grown On",
+          187
+        ],
+        [
+          "Colony Morphology",
+          156
+        ],
+        [
+          "Lactose Fermentation",
+          139
+        ],
+        [
+          "Nitrate Reduction",
+          135
+        ],
+        [
+          "Gram Stain",
+          116
+        ],
+        [
+          "Growth Temperature",
+          111
+        ],
+        [
+          "Sucrose Fermentation",
+          99
+        ],
+        [
+          "Mannitol Fermentation",
+          77
+        ],
+        [
+          "Methyl Red",
+          54
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
+        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
+      ]
+    },
+    {
+      "timestamp": "2025-11-10 23:52:00",
+      "top_error_fields": [
+        [
+          "Glucose Fermentation",
+          195
+        ],
+        [
+          "Media Grown On",
+          187
+        ],
+        [
+          "Colony Morphology",
+          156
+        ],
+        [
+          "Lactose Fermentation",
+          139
+        ],
+        [
+          "Nitrate Reduction",
+          135
+        ],
+        [
+          "Gram Stain",
+          116
+        ],
+        [
+          "Growth Temperature",
+          111
+        ],
+        [
+          "Sucrose Fermentation",
+          99
+        ],
+        [
+          "Mannitol Fermentation",
+          77
+        ],
+        [
+          "Methyl Red",
+          54
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
+        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
+      ]
+    },
+    {
+      "timestamp": "2025-11-10 23:52:00",
+      "top_error_fields": [
+        [
+          "Glucose Fermentation",
+          195
+        ],
+        [
+          "Media Grown On",
+          187
+        ],
+        [
+          "Colony Morphology",
+          156
+        ],
+        [
+          "Lactose Fermentation",
+          139
+        ],
+        [
+          "Nitrate Reduction",
+          135
+        ],
+        [
+          "Gram Stain",
+          116
+        ],
+        [
+          "Growth Temperature",
+          111
+        ],
+        [
+          "Sucrose Fermentation",
+          99
+        ],
+        [
+          "Mannitol Fermentation",
+          77
+        ],
+        [
+          "Methyl Red",
+          54
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Urease' — often parsed '' instead of 'variable'",
+        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Methyl Red' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'H2S' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Nitrate Reduction' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'ONPG' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Lysine Decarboxylase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Gram Stain' — often parsed 'negative' instead of 'positive'",
+        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'"
+      ]
+    },
+    {
+      "timestamp": "2025-11-10 23:52:00",
       "top_error_fields": [
         [
           "Glucose Fermentation",
