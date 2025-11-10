@@ -302,4 +302,53 @@ if not st.session_state.results.empty:
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
 
+# ────────────────────────────────────────────────────────────────
+# 🔁 AUTO-GIT COMMIT (Streamlit Cloud safe version)
+# ────────────────────────────────────────────────────────────────
+import subprocess
+
+def auto_git_commit():
+    """Safely commits parser updates to GitHub if changes occurred."""
+    token = os.getenv("GITHUB_TOKEN")
+    repo = os.getenv("GITHUB_REPO")
+    email = os.getenv("GITHUB_EMAIL", "bot@bactaid.local")
+    name = os.getenv("GITHUB_NAME", "BactAI-D AutoLearner")
+
+    if not token or not repo:
+        print("⚠️ GitHub credentials not found; skipping auto-commit.")
+        return
+
+    try:
+        # Configure git identity
+        subprocess.run(["git", "config", "--global", "user.email", email], check=True)
+        subprocess.run(["git", "config", "--global", "user.name", name], check=True)
+
+        # Check for modifications first
+        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
+        if not result.stdout.strip():
+            print("ℹ️ No local changes to commit — skipping Git push.")
+            return
+
+        # Stage modified learning-related files only
+        subprocess.run([
+            "git", "add",
+            "parser_llm.py", "parser_basic.py",
+            "parser_memory.json", "parser_feedback.json"
+        ], check=False)
+
+        # Commit with timestamp
+        commit_msg = f"🤖 Auto-learned regex update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
+
+        # Push using the token
+        remote_url = f"https://{token}@github.com/{repo}.git"
+        subprocess.run(["git", "push", remote_url, "HEAD:main"], check=True)
+
+        print("✅ Successfully committed & pushed updates to GitHub.")
+    except Exception as e:
+        print(f"⚠️ Auto-commit failed: {e}")
+
+# Call after learning updates
+auto_git_commit()
+
 
