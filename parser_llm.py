@@ -901,22 +901,43 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         elif b in alias and alias[b] in fields:
             _set_field_safe(out, alias[b], _canon_value(alias[b], val))
 
-    # 1) Learned + generic patterns
+        # 1) Learned + generic patterns (from FERMENTATION_PATTERNS)
+    #    Now supports both patterns WITH capture groups and WITHOUT them.
     for pat in FERMENTATION_PATTERNS:
-        for m in re.finditer(pat, t, flags=re.I|re.S):
-            groups = m.groups()
-            if not groups:
-                continue
-            # patterns with a capture list (e.g., negatives / but not / shorthand)
-            if len(groups) >= 1 and groups[0]:
-                span = groups[0]
-                # For positives lines like "... fermentation ...", first item is the sugar name.
-                # But we don’t assume; we just tokenize and mark Positive for these.
-                # Cut off "but not ..." if happened to be in same group
-                if isinstance(span, str):
-                    seg = re.split(r"(?i)\bbut\s+not\b", span)[0]
-                    for a in _tokenize_list(seg):
-                        set_field_by_base(a, "Positive")
+        for m in re.finditer(pat, t, flags=re.I | re.S):
+            span = m.group(0)
+
+            # Decide polarity from matched text
+            val = None
+            if re.search(r"\b(negative|not\s+detected|not\s+produced)\b", span, flags=re.I):
+                val = "Negative"
+            elif re.search(r"\b(variable|weak|trace|slight|inconsistent)\b", span, flags=re.I):
+                val = "Variable"
+            elif re.search(r"\b(\+|positive|detected|produced)\b", span, flags=re.I):
+                val = "Positive"
+
+            # If pattern provides groups (e.g., list of sugars) → use them
+            used_group = False
+            if m.lastindex:
+                for gidx in range(1, m.lastindex + 1):
+                    g = m.group(gidx)
+                    if g and g.strip():
+                        used_group = True
+                        # Cut off "but not ..." inside same sentence
+                        g_cut = re.split(r"(?i)\bbut\s+not\b", g)[0]
+                        for a in _tokenize_list(g_cut):
+                            set_field_by_base(a, val or "Positive")
+
+            if used_group:
+                continue  # already set from captured list
+
+            # No groups: try to derive sugar base from "... <sugar> fermentation ..."
+            # Example matched span: "shows rhamnose fermentation, positive ..."
+            m_base = re.search(r"\b([a-z0-9\-]+)\s+fermentation\b", span, flags=re.I)
+            if m_base:
+                base = m_base.group(1)
+                set_field_by_base(base, val or "Positive")
+
 
     # 2) Explicit negative lists:
     neg_pats = [
