@@ -1173,6 +1173,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             print(f"✅ Added learned pattern for {field} → {pattern_list}")
 
     # Append summary and write file if updated
+        # Append summary and write file if updated
     if updated > 0:
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f, r in auto_heuristics.items():
@@ -1182,10 +1183,15 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
             print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
+
+            # 🧩 Sanitize parser file to ensure all regex lines are well-formed
+            _sanitize_parser_file(parser_file)
+
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
     else:
         print("ℹ️ No matching pattern lists found; no changes made.")
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Convenience bootstrap: run learning + optional gold tests + auto-patch
