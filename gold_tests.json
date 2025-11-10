@@ -123,3 +123,153 @@
     }
   }
 ]
+[
+  {
+    "description": "The isolate is a Gram-negative rod, motile, oxidase negative and catalase positive. It produces H2S on XLD agar and ferments glucose, mannitol and xylose but not lactose or sucrose. Colonies are small and black on XLD agar. It grows well at 37 °C under facultative conditions.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Motility": "Positive",
+      "Oxidase": "Negative",
+      "Catalase": "Positive",
+      "H2S": "Positive",
+      "Glucose Fermentation": "Positive",
+      "Mannitol Fermentation": "Positive",
+      "Xylose Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Sucrose Fermentation": "Negative",
+      "Colony Morphology": "Small; Black",
+      "Media Grown On": "XLD Agar",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Growth Temperature": "37"
+    }
+  },
+  {
+    "description": "Gram-positive cocci in clusters, catalase and coagulase positive. Colonies appear golden yellow on Blood Agar with beta haemolysis. Grows aerobically at 37 °C.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Positive",
+      "Coagulase": "Positive",
+      "Colony Morphology": "Golden Yellow",
+      "Media Grown On": "Blood Agar",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "Oxygen Requirement": "Aerobic",
+      "Growth Temperature": "37"
+    }
+  },
+  {
+    "description": "Gram-negative rods, oxidase positive, non-fermenter on MacConkey Agar, motile. Produces a fruity odour and forms green pigment colonies on nutrient agar. Grows well at 42 °C.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Motility": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Media Grown On": "MacConkey Agar; Nutrient Agar",
+      "Colony Morphology": "Green Pigment",
+      "Growth Temperature": "42"
+    }
+  },
+  {
+    "description": "Gram-positive rods, catalase positive and spore forming. Grows aerobically at 30 °C and 45 °C. Colonies appear dry and white on Nutrient Agar.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Rods",
+      "Catalase": "Positive",
+      "Spore Formation": "Positive",
+      "Oxygen Requirement": "Aerobic",
+      "Growth Temperature": "30//45",
+      "Colony Morphology": "Dry; White",
+      "Media Grown On": "Nutrient Agar"
+    }
+  },
+  {
+    "description": "Gram-positive cocci in chains, catalase negative, beta haemolysis on Blood Agar. Esculin hydrolysis positive and PYR test positive. Facultative anaerobe.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Cocci",
+      "Catalase": "Negative",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "Esculin Hydrolysis": "Positive",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Media Grown On": "Blood Agar"
+    }
+  },
+  {
+    "description": "Gram-positive short rods, catalase positive, non-spore forming. Grows at 4 °C but not at 45 °C. Beta haemolysis on Blood Agar and shows tumbling motility.",
+    "expected": {
+      "Gram Stain": "Positive",
+      "Shape": "Short Rods",
+      "Catalase": "Positive",
+      "Spore Formation": "Negative",
+      "Haemolysis Type": "Beta",
+      "Haemolysis": "Positive",
+      "Motility": "Positive",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Media Grown On": "Blood Agar",
+      "Growth Temperature": "4//45"
+    }
+  },
+  {
+    "description": "Gram-negative curved rods, oxidase positive, catalase positive, grows on TCBS agar forming yellow colonies. Ferments sucrose and mannitol but not lactose. Motile by polar flagella.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Media Grown On": "TCBS Agar",
+      "Colony Morphology": "Yellow",
+      "Sucrose Fermentation": "Positive",
+      "Mannitol Fermentation": "Positive",
+      "Lactose Fermentation": "Negative",
+      "Motility": "Positive"
+    }
+  },
+  {
+    "description": "Gram-negative rods, oxidase negative, indole positive, citrate negative, urease positive. Ferments glucose and lactose with acid and gas production on MacConkey Agar. Non-spore forming, motile. Facultative anaerobe.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Indole": "Positive",
+      "Citrate": "Negative",
+      "Urease": "Positive",
+      "Glucose Fermentation": "Positive",
+      "Lactose Fermentation": "Positive",
+      "Spore Formation": "Negative",
+      "Motility": "Positive",
+      "Oxygen Requirement": "Facultative Anaerobe",
+      "Media Grown On": "MacConkey Agar"
+    }
+  },
+  {
+    "description": "Gram-negative rods, oxidase negative, non-motile, citrate positive, urease positive. Colonies are pale pink and smooth on MacConkey Agar. Grows at 37 °C. Facultative anaerobe.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Rods",
+      "Oxidase": "Negative",
+      "Motility": "Negative",
+      "Citrate": "Positive",
+      "Urease": "Positive",
+      "Colony Morphology": "Pale Pink; Smooth",
+      "Media Grown On": "MacConkey Agar",
+      "Growth Temperature": "37",
+      "Oxygen Requirement": "Facultative Anaerobe"
+    }
+  },
+  {
+    "description": "Gram-negative diplococci, oxidase positive, catalase positive, grows on Chocolate Agar and Thayer Martin Agar. Non-motile. Capnophilic growth requirement.",
+    "expected": {
+      "Gram Stain": "Negative",
+      "Shape": "Cocci",
+      "Oxidase": "Positive",
+      "Catalase": "Positive",
+      "Media Grown On": "Chocolate Agar; Thayer Martin Agar",
+      "Motility": "Negative",
+      "Oxygen Requirement": "Capnophilic"
+    }
+  }
+]
