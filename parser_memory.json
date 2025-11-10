@@ -295,6 +295,43 @@
         "Consider adjusting pattern for 'Motility' \u2014 often parsed 'positive' instead of 'motile'",
         "Consider adjusting pattern for 'Media Grown On' \u2014 often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
       ]
+    },
+    {
+      "timestamp": "2025-11-10 00:31:34",
+      "top_error_fields": [
+        [
+          "Motility",
+          3
+        ],
+        [
+          "Media Grown On",
+          3
+        ],
+        [
+          "DNase",
+          1
+        ],
+        [
+          "Lactose Fermentation",
+          1
+        ],
+        [
+          "H2S",
+          1
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'DNase' \u2014 often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' \u2014 often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Motility' \u2014 often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'H2S' \u2014 often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' \u2014 often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Spore Formation' \u2014 often parsed 'positive' instead of 'negative'",
+        "Consider adjusting pattern for 'Media Grown On' \u2014 often parsed 'blood agar; beta-haemolytic on blood agar' instead of 'aloa'",
+        "Consider adjusting pattern for 'Xylose Fermentation' \u2014 often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Motility' \u2014 often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Media Grown On' \u2014 often parsed 'macconkey agar; grows on macconkey agar' instead of 'macconkey agar'"
+      ]
     }
   ],
   "auto_heuristics": {
