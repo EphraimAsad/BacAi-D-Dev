@@ -45,6 +45,26 @@ try:
 except Exception:
     fallback_parser = None  # We'll handle if unavailable
 
+def _sanitize_parser_file(file_path):
+    """Ensures all regex lines end properly with quotes and commas (prevents SyntaxError)."""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        fixed_lines = []
+        for line in lines:
+            if 'r"' in line and not line.strip().endswith(('")', '",', '"')):
+                if '"' in line and not line.strip().endswith('",'):
+                    line = line.rstrip() + '",\n'
+            fixed_lines.append(line)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.writelines(fixed_lines)
+
+        print(f"🧩 Sanitized parser file: {file_path}")
+    except Exception as e:
+        print(f"⚠️ Failed to sanitize parser file: {e}")
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Persistent storage paths
 # ──────────────────────────────────────────────────────────────────────────────
@@ -311,7 +331,7 @@ DECARBOXYLASE_PATTERNS = [
     r"\\bornitihine\ decarboxylase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 FERMENTATION_PATTERNS = [
-    r"(?:ferments?|utilizes?|produces?\s+acid\s+from)\s+([a-z0-9\.\-%\s,/&    r"\\blactose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)
+    r"\\blactose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)
     r"\\bxylose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (16x)
     r"\\bmannitol\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (32x)
     r"\\bsucrose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (39x)
