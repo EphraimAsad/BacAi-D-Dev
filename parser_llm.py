@@ -492,7 +492,7 @@ FERMENTATION_PATTERNS = [
     r"\bmaltose\s+fermentation\b.*(?:positive|detected|produced)",
     r"\brhamnose\s+fermentation\b.*(?:positive|detected|produced)",
     # Negatives
-    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&   
+    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&)"   
     r"\bmannitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (77x)
     r"\bsucrose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (99x)
     r"\blactose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (139x)
