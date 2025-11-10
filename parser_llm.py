@@ -415,7 +415,7 @@ MR_PATTERNS = [
     r"\bmethyl\s+red\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (54x)
     r"\bmethyl\s+red\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:07:01 (54x)
     r"\bmethyl\s+red\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (54x)
-    r"\bmethyl\ red\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (54x)
+    r"\bmethyl\s+red\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (54x)
 ]
 
 VP_PATTERNS = [
@@ -442,7 +442,7 @@ NITRATE_PATTERNS = [
     r"\bnitrate\s+reduction\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (135x)
     r"\bnitrate\s+reduction\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:07:01 (135x)
     r"\bnitrate\s+reduction\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (135x)
-    r"\bnitrate\ reduction\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (135x)
+    r"\bnitrate\s+reduction\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (135x)
 ]
 
 ESCULIN_PATTERNS = [
@@ -452,7 +452,7 @@ ESCULIN_PATTERNS = [
     r"\besculin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (17x)
     r"\besculin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:07:01 (17x)
     r"\besculin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (17x)
-    r"\besculin\ hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (17x)
+    r"\besculin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (17x)
 ]
 
 DNASE_PATTERNS = [
@@ -468,7 +468,7 @@ GELATIN_PATTERNS = [
     r"\bgelatin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (21x)
     r"\bgelatin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:07:01 (21x)
     r"\bgelatin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (21x)
-    r"\bgelatin\ hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (21x)
+    r"\bgelatin\s+hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (21x)
 ]
 
 LIPASE_PATTERNS = [
@@ -494,8 +494,8 @@ DECARBOXYLASE_PATTERNS = [
     r"\bornitihine\s+decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:07:01 (8x)
     r"\blysine\s+decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (9x)
     r"\bornitihine\s+decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (8x)
-    r"\blysine\ decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (9x)
-    r"\bornitihine\ decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (8x)
+    r"\blysine\s+decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (9x)
+    r"\bornitihine\s+decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (8x)
 ]
 
 FERMENTATION_PATTERNS = [
@@ -510,7 +510,7 @@ FERMENTATION_PATTERNS = [
     r"\bmaltose\s+fermentation\b.*(?:positive|detected|produced)",
     r"\brhamnose\s+fermentation\b.*(?:positive|detected|produced)",
     # Negatives
-    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&)"   ,
+    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&)",
     r"\bmannitol\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (77x)
     r"\bsucrose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (99x)
     r"\blactose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:54:07 (139x)
@@ -543,16 +543,16 @@ FERMENTATION_PATTERNS = [
     r"\bmaltose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (25x)
     r"\bfructose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (3x)
     r"\brhamnose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:11:31 (8x)
-    r"\bmannitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (77x)
-    r"\bsucrose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (99x)
-    r"\blactose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (139x)
-    r"\bxylose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (28x)
-    r"\barabinose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (12x)
-    r"\bglucose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (195x)
-    r"\bsorbitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (11x)
-    r"\bmaltose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (25x)
-    r"\bfructose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (3x)
-    r"\brhamnose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (8x)
+    r"\bmannitol\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (77x)
+    r"\bsucrose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (99x)
+    r"\blactose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (139x)
+    r"\bxylose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (28x)
+    r"\barabinose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (12x)
+    r"\bglucose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (195x)
+    r"\bsorbitol\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (11x)
+    r"\bmaltose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (25x)
+    r"\bfructose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (3x)
+    r"\brhamnose\s+fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 23:14:11 (8x)
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
