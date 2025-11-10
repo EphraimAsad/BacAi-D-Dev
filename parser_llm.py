@@ -68,9 +68,9 @@ def _sanitize_auto_learned_patterns(file_path="parser_llm.py"):
             content = f.read()
 
         # Replace double backslashes in regex patterns inside r"..." strings
-        content = re.sub(r'r"\\\\b', r'r"\b', content)
-        content = re.sub(r'r"\\\\', r'r"\\', content)
-        content = re.sub(r'\\\\b', r'\\b', content)
+        content = re.sub(r'r"\\b', r'r"\b', content)
+        content = re.sub(r'r"\\\', r'r"\', content)
+        content = re.sub(r'\\\b', r'\b', content)
 
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -1186,11 +1186,11 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
 
         # Build a learned regex string safely (avoid rf"..." with escapes)
         if any(k in rule["rule"].lower() for k in ["negative", "not"]):
-            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*(?:negative|not\\s+detected|not\\s+produced)"'
+            learned_regex = r'"\b' + re.escape(field_lower) + r'\b.*(?:negative|not\\s+detected|not\\s+produced)"'
         elif "positive" in rule["rule"].lower():
-            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*(?:positive|detected|produced)"'
+            learned_regex = r'"\b' + re.escape(field_lower) + r'\b.*(?:positive|detected|produced)"'
         else:
-            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*reaction"'
+            learned_regex = r'"\b' + re.escape(field_lower) + r'\b.*reaction"'
 
         insertion = f"    r{learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
 
