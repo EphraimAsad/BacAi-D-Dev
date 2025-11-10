@@ -59,6 +59,27 @@ def _sanitize_parser_file(file_path):
     except Exception as e:
         print(f"⚠️ Failed to sanitize parser file: {e}")
 
+
+def _sanitize_auto_learned_patterns(file_path="parser_llm.py"):
+    """Fixes invalid escape sequences from auto-learned regex lines."""
+    import re
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Replace double backslashes in regex patterns inside r"..." strings
+        content = re.sub(r'r"\\\\b', r'r"\b', content)
+        content = re.sub(r'r"\\\\', r'r"\\', content)
+        content = re.sub(r'\\\\b', r'\\b', content)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        print(f"🧩 Fixed escaped regexes in {file_path}")
+    except Exception as e:
+        print(f"⚠️ Auto-learned pattern sanitization failed: {e}")
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Persistent storage paths
 # ──────────────────────────────────────────────────────────────────────────────
