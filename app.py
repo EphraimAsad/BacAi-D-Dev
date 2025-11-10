@@ -1,30 +1,34 @@
+# app.py — BactAI-D Main Interface (Aligned with self-learning parsers)
+# ---------------------------------------------------------
 import streamlit as st
 import pandas as pd
 import re
 import os
 import json
+import subprocess
 from fpdf import FPDF
 from datetime import datetime
 
 from engine import BacteriaIdentifier
-from parser_llm import parse_input_free_text  # <-- for Gold Spec Tests
+from parser_llm import parse_input_free_text
+from parser_llm import enable_self_learning_autopatch  # unified LLM learner
+from parser_basic import enable_self_learning_autopatch as enable_regex_autopatch  # regex fallback learner
 
 # --- CONFIG ---
 st.set_page_config(page_title="BactAI-D Assistant", layout="wide")
 
-# --- LOAD DATA with auto-reload when the file changes ---
+# --- LOAD DATA ---
 @st.cache_data
 def load_data(path, last_modified):
     df = pd.read_excel(path)
     df.columns = [c.strip() for c in df.columns]
     return df
 
-# Resolve path (prefer ./data/bacteria_db.xlsx, fallback to ./bacteria_db.xlsx)
+# Resolve DB path
 primary_path = os.path.join("data", "bacteria_db.xlsx")
 fallback_path = os.path.join("bacteria_db.xlsx")
 data_path = primary_path if os.path.exists(primary_path) else fallback_path
 
-# Get last modified time (used as cache key so cache invalidates on change)
 try:
     last_modified = os.path.getmtime(data_path)
 except FileNotFoundError:
@@ -34,7 +38,7 @@ except FileNotFoundError:
 db = load_data(data_path, last_modified)
 eng = BacteriaIdentifier(db)
 
-# Optional: show when the DB was last updated
+# Optional timestamp
 st.sidebar.caption(f"📅 Database last updated: {datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')}")
 
 # --- PAGE HEADER ---
@@ -60,18 +64,16 @@ if "gold_results" not in st.session_state:
 if "gold_summary" not in st.session_state:
     st.session_state.gold_summary = None
 
-# --- RESET TRIGGER HANDLER (before widgets are created) ---
+# --- RESET TRIGGER HANDLER ---
 if "reset_trigger" in st.session_state and st.session_state["reset_trigger"]:
     for key in list(st.session_state.user_input.keys()):
         st.session_state.user_input[key] = "Unknown"
-
     for key in list(st.session_state.keys()):
         if key not in ["user_input", "results", "reset_trigger", "gold_results", "gold_summary"]:
             if isinstance(st.session_state[key], list):
                 st.session_state[key] = []
             else:
                 st.session_state[key] = "Unknown"
-
     st.session_state["reset_trigger"] = False
     st.rerun()
 
@@ -85,6 +87,7 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
+# --- FIELD POPULATION ---
 def get_unique_values(field):
     vals = []
     for v in eng.db[field]:
@@ -136,70 +139,24 @@ if st.sidebar.button("🔄 Reset All Inputs"):
     st.rerun()
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 🧪 GOLD SPEC TESTS — sidebar controls
+# 🧠 GOLD SPEC TESTS SECTION (Now Self-Learning)
 # ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar.expander("🧪 Gold Spec Tests", expanded=False):
-    # Run tests
-    if st.button("▶️ Run Gold Spec Tests"):
-        try:
-            # Load gold tests file
-            with open("gold_tests.json", "r", encoding="utf-8") as f:
-                tests = json.load(f)
+    if st.button("▶️ Run Gold Spec Tests & Self-Learn"):
+        with st.spinner("Running Gold Spec Tests and analyzing feedback..."):
+            try:
+                # Run learning process on both parsers (LLM + regex)
+                enable_self_learning_autopatch(run_tests=True, db_fields=[c for c in db.columns if c.lower() != "genus"])
+                enable_regex_autopatch(run_tests=True, db_fields=[c for c in db.columns if c.lower() != "genus"])
+                st.success("✅ Gold Spec Tests completed and learning applied.")
+            except Exception as e:
+                st.error(f"Gold Test Learning failed: {e}")
 
-            # DB fields to clamp outputs to your schema
-            db_fields = [c for c in db.columns if c.strip().lower() != "genus"]
-
-            results = []
-            feedback = []
-            passed = 0
-
-            for case in tests:
-                parsed = parse_input_free_text(case["input"], db_fields=db_fields)
-                expected = case.get("expected", {})
-                mismatched = []
-
-                # Compare only expected keys (gold standard)
-                for key, exp_val in expected.items():
-                    got_val = parsed.get(key)
-                    if got_val != exp_val:
-                        mismatched.append({"field": key, "got": got_val, "expected": exp_val})
-
-                if mismatched:
-                    results.append({"name": case.get("name", "Unnamed Case"), "status": "❌", "mismatches": mismatched, "parsed": parsed, "expected": expected})
-                    feedback.append({"name": case.get("name", "Unnamed Case"), "text": case["input"], "errors": mismatched})
-                else:
-                    results.append({"name": case.get("name", "Unnamed Case"), "status": "✅", "mismatches": [], "parsed": parsed, "expected": expected})
-                    passed += 1
-
-            # Save feedback for the parser’s learning loop
-            with open("parser_feedback.json", "w", encoding="utf-8") as fb:
-                json.dump(feedback, fb, indent=2)
-            from parser_llm import analyze_feedback_and_learn
-            analyze_feedback_and_learn("parser_feedback.json", "parser_memory.json")
-            from parser_llm import auto_update_parser_regex
-            auto_update_parser_regex("parser_memory.json", "parser_llm.py")
-
-
-
-            st.session_state.gold_results = results
-            st.session_state.gold_summary = (passed, len(tests))
-            st.success("Gold Spec Tests finished.")
-
-        except FileNotFoundError:
-            st.error("gold_tests.json not found in repo root. Please add it and try again.")
-        except Exception as e:
-            st.error(f"Gold Test failed to run: {e}")
-
-    # Clear learning memory
     if st.button("🧹 Clear Learning Memory"):
-        try:
-            if os.path.exists("parser_feedback.json"):
-                os.remove("parser_feedback.json")
-                st.success("Cleared feedback memory.")
-            else:
-                st.info("No feedback file found.")
-        except Exception as e:
-            st.error(f"Could not clear memory: {e}")
+        for f in ["parser_feedback.json", "parser_memory.json"]:
+            if os.path.exists(f):
+                os.remove(f)
+        st.success("Cleared parser learning memory.")
 
 # --- IDENTIFY BUTTON ---
 if st.sidebar.button("🔍 Identify"):
@@ -226,69 +183,42 @@ if st.sidebar.button("🔍 Identify"):
 
 # --- DISPLAY RESULTS ---
 if not st.session_state.results.empty:
-    st.info("Percentages based upon options entered. True confidence percentage shown within each expanded result.")
+    st.info("Percentages based upon entered tests. True confidence reflects all fields.")
     for _, row in st.session_state.results.iterrows():
         confidence_value = int(row["Confidence"].replace("%", ""))
         confidence_color = "🟢" if confidence_value >= 75 else "🟡" if confidence_value >= 50 else "🔴"
         header = f"**{row['Genus']}** — {confidence_color} {row['Confidence']}"
         with st.expander(header):
             st.markdown(f"**Reasoning:** {row['Reasoning']}")
-            st.markdown(f"**Top 3 Next Tests to Differentiate:** {row['Next Tests']}")
-            st.markdown(f"**True Confidence (All Tests):** {row['True Confidence (All Tests)']}")
+            st.markdown(f"**Next Tests:** {row['Next Tests']}")
+            st.markdown(f"**True Confidence:** {row['True Confidence (All Tests)']}")
             if row["Extra Notes"]:
                 st.markdown(f"**Notes:** {row['Extra Notes']}")
 
-# --- GOLD TEST RESULTS DISPLAY (main area) ---
-if st.session_state.gold_results is not None:
-    passed, total = st.session_state.gold_summary or (0, 0)
-    st.markdown("## 🧪 Gold Test Results")
-    st.markdown(f"**Summary:** {passed}/{total} passed")
-    for r in st.session_state.gold_results:
-        if r["status"] == "✅":
-            st.markdown(f"**{r['name']}** — ✅ Passed all checks")
-        else:
-            st.markdown(f"**{r['name']}** — ❌ Mismatches:")
-            for m in r["mismatches"]:
-                st.markdown(f"- **{m['field']}**: got `{m['got']}`, expected `{m['expected']}`")
-            with st.expander("Show parsed vs expected"):
-                st.code(json.dumps({"parsed": r["parsed"], "expected": r["expected"]}, indent=2), language="json")
-
 # --- PDF EXPORT ---
 def export_pdf(results_df, user_input):
-    def safe_text(text):
-        """Convert text to Latin-1 safe characters."""
-        text = str(text).replace("•", "-").replace("—", "-").replace("–", "-")
-        return text.encode("latin-1", "replace").decode("latin-1")
-
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, "BactAI-d Identification Report", ln=True, align="C")
+    pdf.cell(0, 10, "BactAI-D Identification Report", ln=True, align="C")
 
     pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 8, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-    pdf.ln(4)
+    pdf.cell(0, 8, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+    pdf.ln(5)
 
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, "Entered Test Results:", ln=True)
+    pdf.cell(0, 8, "Entered Results:", ln=True)
     pdf.set_font("Helvetica", "", 10)
     for k, v in user_input.items():
-        pdf.multi_cell(0, 6, safe_text(f"- {k}: {v}"))
-
+        pdf.multi_cell(0, 6, f"- {k}: {v}")
     pdf.ln(6)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, "Top Possible Matches:", ln=True)
+    pdf.cell(0, 8, "Predictions:", ln=True)
     pdf.set_font("Helvetica", "", 10)
-
     for _, row in results_df.iterrows():
-        pdf.multi_cell(0, 7, safe_text(f"- {row['Genus']} — Confidence: {row['Confidence']} (True: {row['True Confidence (All Tests)']})"))
-        pdf.multi_cell(0, 6, safe_text(f"  Reasoning: {row['Reasoning']}"))
-        if row['Next Tests']:
-            pdf.multi_cell(0, 6, safe_text(f"  Next Tests: {row['Next Tests']}"))
-        if row['Extra Notes']:
-            pdf.multi_cell(0, 6, safe_text(f"  Notes: {row['Extra Notes']}"))
-        pdf.ln(3)
-
+        pdf.multi_cell(0, 6, f"- {row['Genus']} — {row['Confidence']} (True: {row['True Confidence (All Tests)']})")
+        pdf.multi_cell(0, 6, f"  Reasoning: {row['Reasoning']}")
+        pdf.ln(2)
     pdf.output("BactAI-d_Report.pdf")
     return "BactAI-d_Report.pdf"
 
@@ -302,55 +232,27 @@ if not st.session_state.results.empty:
 st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
 
-# ────────────────────────────────────────────────────────────────
-# 🔁 AUTO-GIT COMMIT (Streamlit Cloud safe version)
-# ────────────────────────────────────────────────────────────────
-import subprocess
-
+# --- AUTO-GIT COMMIT ---
 def auto_git_commit():
-    """Safely commits parser updates to GitHub if changes occurred."""
     token = os.getenv("GITHUB_TOKEN")
     repo = os.getenv("GITHUB_REPO")
-    email = os.getenv("GITHUB_EMAIL", "bot@bactaid.local")
-    name = os.getenv("GITHUB_NAME", "BactAI-D AutoLearner")
-
     if not token or not repo:
-        print("⚠️ GitHub credentials not found; skipping auto-commit.")
+        print("⚠️ GitHub credentials missing.")
         return
-
     try:
-        # Configure git identity
-        subprocess.run(["git", "config", "--global", "user.email", email], check=True)
-        subprocess.run(["git", "config", "--global", "user.name", name], check=True)
-
-        # Check for modifications first
+        subprocess.run(["git", "config", "--global", "user.name", os.getenv("GITHUB_NAME", "AutoLearner")], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", os.getenv("GITHUB_EMAIL", "bot@bactaid.local")], check=True)
         result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not result.stdout.strip():
-            print("ℹ️ No local changes to commit — skipping Git push.")
+            print("ℹ️ No changes to commit.")
             return
-
-        # Stage modified learning-related files only
-        subprocess.run([
-            "git", "add",
-            "parser_llm.py", "parser_basic.py",
-            "parser_memory.json", "parser_feedback.json"
-        ], check=False)
-
-        # Commit with timestamp
-        commit_msg = f"🤖 Auto-learned regex update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
-
-        # Push using the token
-        remote_url = f"https://{token}@github.com/{repo}.git"
-        subprocess.run(["git", "push", remote_url, "HEAD:main"], check=True)
-
-        print("✅ Successfully committed & pushed updates to GitHub.")
+        subprocess.run(["git", "add", "parser_llm.py", "parser_basic.py", "parser_memory.json", "parser_feedback.json"], check=False)
+        msg = f"🤖 Auto-learn update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", msg], check=False)
+        subprocess.run(["git", "push", f"https://{token}@{repo}.git", "HEAD:main"], check=True)
+        print("✅ Auto-commit completed.")
     except Exception as e:
         print(f"⚠️ Auto-commit failed: {e}")
 
-# Call after learning updates
 auto_git_commit()
-st.sidebar.success("✅ GitHub auto-update completed. View latest commit on GitHub.")
-
-
-
+st.sidebar.success("✅ Learning cycle complete & synced with GitHub.")
