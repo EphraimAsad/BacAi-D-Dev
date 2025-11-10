@@ -38,33 +38,6 @@ import math
 import difflib
 from datetime import datetime
 from typing import Dict, List, Set, Tuple, Optional
-
-# Fallback deterministic parser (your local baseline)
-try:
-    from parser_basic import parse_input_free_text as fallback_parser
-except Exception:
-    fallback_parser = None  # We'll handle if unavailable
-
-def _sanitize_parser_file(file_path):
-    """Ensures all regex lines end properly with quotes and commas (prevents SyntaxError)."""
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        fixed_lines = []
-        for line in lines:
-            if 'r"' in line and not line.strip().endswith(('")', '",', '"')):
-                if '"' in line and not line.strip().endswith('",'):
-                    line = line.rstrip() + '",\n'
-            fixed_lines.append(line)
-
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.writelines(fixed_lines)
-
-        print(f"🧩 Sanitized parser file: {file_path}")
-    except Exception as e:
-        print(f"⚠️ Failed to sanitize parser file: {e}")
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Persistent storage paths
 # ──────────────────────────────────────────────────────────────────────────────
