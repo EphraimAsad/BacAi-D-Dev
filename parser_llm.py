@@ -128,6 +128,7 @@ def _repair_parser_file(file_path="parser_llm.py"):
         print(f"⚠️ Parser file repair failed: {e}")
 
 _repair_parser_file("parser_llm.py")
+_sanitize_auto_learned_patterns("parser_llm.py")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Schema allowed values (aligned with your Excel)
