@@ -1447,9 +1447,9 @@ def analyze_feedback_and_learn(
 
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
-    Automatically patch regex pattern lists when heuristics reach threshold (safe version).
-    This version ensures multi-word field names (e.g. 'mannitol fermentation') 
-    become regex fragments with flexible whitespace (\\s+), not literal escaped spaces.
+    Automatically patch regex pattern lists when heuristics reach threshold.
+    Includes smart handling for multi-word fields (mannitol fermentation, methyl red, etc.)
+    and adds capturing groups for fermentation, decarboxylase, gelatin, esculin, and MR patterns.
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
@@ -1464,7 +1464,6 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         print(f"❌ Could not read parser file: {e}")
         return
 
-    # Map of field → regex list variable names
     pattern_lists = {
         "oxidase": "OXIDASE_PATTERNS",
         "catalase": "CATALASE_PATTERNS",
@@ -1491,7 +1490,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         field_lower = field.lower()
         pattern_list = None
 
-        # Determine which regex list to patch into
+        # Identify which pattern block this field should go into
         for key, list_name in pattern_lists.items():
             if key in field_lower:
                 pattern_list = list_name
@@ -1499,21 +1498,58 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         if not pattern_list:
             continue
 
-        # ✅ Use flexible whitespace field fragment (mannitol\s+fermentation)
+        # Use our safe whitespace regex builder
         frag = _regexify_field_name_for_whitespace(field_lower)
-
-        # Build regex safely
         rule_txt = rule.get("rule", "").lower()
-        if any(k in rule_txt for k in ["negative", "not"]):
-            learned = rf"\b{frag}\b.*(?:negative|not\s+detected|not\s+produced)"
-        elif "positive" in rule_txt:
-            learned = rf"\b{frag}\b.*(?:positive|detected|produced)"
-        else:
-            learned = rf"\b{frag}\b.*reaction"
 
+        # Smart pattern construction
+        def build_learned_pattern(fragment, polarity_rule):
+            """Generate final learned regex based on polarity"""
+            if any(k in polarity_rule for k in ["negative", "not"]):
+                return rf"\b{fragment}\b.*(?:negative|not\s+detected|not\s+produced)"
+            elif "positive" in polarity_rule:
+                return rf"\b{fragment}\b.*(?:positive|detected|produced)"
+            elif "variable" in polarity_rule or "weak" in polarity_rule:
+                return rf"\b{fragment}\b.*(?:variable|weak|trace|slight)"
+            else:
+                return rf"\b{fragment}\b.*reaction"
+
+        # Add capturing logic for specific pattern lists
+        if pattern_list in {
+            "FERMENTATION_PATTERNS",
+            "DECARBOXYLASE_PATTERNS",
+            "GELATIN_PATTERNS",
+            "ESCULIN_PATTERNS",
+            "MR_PATTERNS",
+        }:
+            # Detect the base term before the main keyword for capturing
+            m_field = re.match(r"^([a-z0-9\-]+)\s+", field_lower.strip())
+            if m_field:
+                base = re.escape(m_field.group(1))
+                # For example: (?P<base>rhamnose)\s+fermentation
+                if "fermentation" in field_lower:
+                    frag_captured = rf"(?P<base>{base})\s+fermentation"
+                elif "decarboxylase" in field_lower:
+                    frag_captured = rf"(?P<base>{base})\s+decarboxylase"
+                elif "gelatin" in field_lower:
+                    frag_captured = rf"(?P<base>{base})\s+hydrolysis"
+                elif "esculin" in field_lower:
+                    frag_captured = rf"(?P<base>{base})\s+hydrolysis"
+                elif "methyl red" in field_lower or field_lower.strip() == "mr":
+                    frag_captured = rf"(?P<base>{base})\s+red"
+                else:
+                    frag_captured = frag
+            else:
+                frag_captured = frag
+
+            learned = build_learned_pattern(frag_captured, rule_txt)
+        else:
+            learned = build_learned_pattern(frag, rule_txt)
+
+        # Construct the new line for insertion
         insertion = f'    r"{learned}",  # auto-learned {now} ({rule["count"]}x)\n'
 
-        # Regex to locate the correct pattern list block
+        # Regex pattern for inserting into the right pattern block
         pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
 
         new_code, count = re.subn(
@@ -1528,7 +1564,6 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             updated += 1
             print(f"✅ Added learned pattern for {field} → {pattern_list}")
 
-    # Append summary footer & sanitize if updated
     if updated > 0:
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f, r in auto_heuristics.items():
@@ -1538,10 +1573,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
             print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
-
-            # Sanitize any residual malformed lines
             _sanitize_parser_file(parser_file)
-
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
     else:
@@ -1550,10 +1582,8 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
 
 def _regexify_field_name_for_whitespace(field: str) -> str:
     """
-    Converts multi-word field names into regex fragments that allow flexible whitespace.
-    Example:
-        'mannitol fermentation' → 'mannitol\\s+fermentation'
-        'nitrate reduction' → 'nitrate\\s+reduction'
+    Converts a field name like 'mannitol fermentation' → 'mannitol\\s+fermentation'.
+    Escapes each word safely and joins with \\s+ for whitespace flexibility.
     """
     import re
     tokens = re.split(r"\s+", field.strip())
