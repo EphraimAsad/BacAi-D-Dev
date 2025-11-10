@@ -42,12 +42,12 @@ from typing import Dict, List, Set, Tuple, Optional
 def _sanitize_parser_file(file_path):
     """Ensures all regex lines end properly with quotes and commas (prevents SyntaxError)."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8") as f:",
             lines = f.readlines()
 
         fixed_lines = []
         for line in lines:
-            if 'r"' in line and not line.strip().endswith(('\")', '\",', '"')):
+            if 'r"' in line and not line.strip().endswith(('\")', '\",', '"')):",
                 if '"' in line and not line.strip().endswith('",'):
                     line = line.rstrip() + '",\n'
             fixed_lines.append(line)
@@ -64,12 +64,12 @@ def _sanitize_auto_learned_patterns(file_path="parser_llm.py"):
     """Fixes invalid escape sequences from auto-learned regex lines."""
     import re
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8") as f:",
             content = f.read()
 
-        # Replace double backslashes in regex patterns inside r"..." strings
-        content = re.sub(r'r"\\b', r'r"\b', content)
-        content = re.sub(r'r"\\\', r'r"\', content)
+        # Replace double backslashes in regex patterns inside r"..." strings",
+        content = re.sub(r'r"\\b', r'r"\b', content)",
+        content = re.sub(r'r"\\\', r'r"\', content)",
         content = re.sub(r'\\\b', r'\b', content)
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -96,7 +96,7 @@ def _ensure_data_dir():
 
 def _load_json(path: str, default):
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:",
             return json.load(f)
     except Exception:
         return default
@@ -112,7 +112,7 @@ def _save_json(path: str, obj):
 def _repair_parser_file(file_path="parser_llm.py"):
     """Ensures parser_llm.py has no unterminated string or quote errors."""
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8") as f:",
             content = f.read()
         # if a stray line ends with comma/quote colon, fix it
         repaired = []
@@ -147,7 +147,7 @@ ALLOWED_VALUES: Dict[str, Set[str]] = {
     "Motility": {"Positive", "Negative", "Variable"},
     "Capsule": {"Positive", "Negative", "Variable"},
     "Spore Formation": {"Positive", "Negative", "Variable"},
-    "Oxygen Requirement": {"Intracellular", "Aerobic", "Anaerobic", "Facultative Anaerobe", "Microaerophilic", "Capnophilic"},
+    "Oxygen Requirement": {"Intracellular", "Aerobic", "Anaerobic", "Facultative Anaerobe", "Microaerophilic", "Capnophilic"},",
     "Methyl Red": {"Positive", "Negative", "Variable"},
     "VP": {"Positive", "Negative", "Variable"},
     "Citrate": {"Positive", "Negative", "Variable"},
@@ -262,7 +262,7 @@ NEGATION_CUES = [
     "absent","without production","not detected","does not","did not","fails to",
     "unable to","no growth","non-fermenter","nonfermenter","non fermenter","no haemolysis","no hemolysis"
 ]
-VARIABLE_CUES = ["variable","inconsistent","weak","trace","slight","equivocal","irregular"]
+VARIABLE_CUES = ["variable","inconsistent","weak","trace","slight","equivocal","irregular"]",
 
 # Colony morphology controlled vocab
 CM_TOKENS = {
@@ -288,6 +288,7 @@ CM_TOKENS = {
 OXIDASE_PATTERNS = [
     r"\boxidase\s*(?:test)?\s*(?:\+|positive|detected)\b",
     r"\boxidase\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+    r"\\boxidase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (14x)",
 ]
 CATALASE_PATTERNS = [
     r"\bcatalase\s*(?:test)?\s*(?:\+|positive|detected)\b",
@@ -300,21 +301,25 @@ COAGULASE_PATTERNS = [
 INDOLE_PATTERNS = [
     r"\bindole\s*(?:test)?\s*(?:\+|positive|detected)\b",
     r"\bindole\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+    r"\\bindole\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (12x)",
 ]
 UREASE_PATTERNS = [
     r"\burease\s*(?:test)?\s*(?:\+|positive|detected)\b",
     r"\burease\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
     r"\burease\s*(?:test)?\s*(?:variable|weak|trace)\b",
+    r"\\burease\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (38x)",
 ]
 CITRATE_PATTERNS = [
     r"\bcitrate\s*(?:test)?\s*(?:\+|positive)\b",
     r"\bcitrate\s*(?:test)?\s*(?:\-|negative)\b",
+    r"\\bcitrate\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (8x)",
 ]
 MR_PATTERNS = [
     r"\bmethyl\s+red\s*(?:test)?\s*(?:\+|positive)\b",
     r"\bmethyl\s+red\s*(?:test)?\s*(?:\-|negative)\b",
     r"\bmr\s*(?:test)?\s*(?:\+|positive)\b",
     r"\bmr\s*(?:test)?\s*(?:\-|negative)\b",
+    r"\\bmethyl\ red\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (54x)",
 ]
 VP_PATTERNS = [
     r"\bvp\s*(?:test)?\s*(?:\+|positive)\b",
@@ -327,28 +332,34 @@ H2S_PATTERNS = [
     r"\bh\s*2\s*s\s+(?:\-|negative|not\s+detected|not\s+produced)\b",
     r"\bproduces\s+h\s*2\s*s\b",
     r"\bno\s+h\s*2\s*s\s+production\b",
-    r"\bh2s\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
+    r"\bh2s\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)",
+    r"\\bh2s\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (11x)",
 ]
 NITRATE_PATTERNS = [
     r"\breduces\s+nitrate\b",
     r"\bdoes\s+not\s+reduce\s+nitrate\b",
     r"\bnitrate\s+reduction\s+(?:\+|positive)\b",
     r"\bnitrate\s+reduction\s+(?:\-|negative)\b",
+    r"\\bnitrate\ reduction\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (135x)",
 ]
 ESCULIN_PATTERNS = [
     r"\besculin\s+hydrolysis\s*(?:\+|positive)\b",
     r"\besculin\s+hydrolysis\s*(?:\-|negative)\b",
-    r"\besculin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\besculin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)",
+    r"\\besculin\ hydrolysis\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (17x)",
 ]
 DNASE_PATTERNS = [
     r"\bdnase\s*(?:test)?\s*(?:\+|positive)\b",
     r"\bdnase\s*(?:test)?\s*(?:\-|negative)\b",
-    r"\bdnase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\bdnase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)",
+    r"\\bdnase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (4x)",
+    r"\\bdnase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (33x)",
 ]
 GELATIN_PATTERNS = [
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\+|positive)\b",
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\-|negative)\b",
-    r"\bgelatin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (15x)
+    r"\bgelatin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (15x)",
+    r"\\bgelatin\ hydrolysis\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (21x)",
 ]
 LIPASE_PATTERNS = [
     r"\blipase\s*(?:test)?\s*(?:\+|positive)\b",
@@ -364,22 +375,34 @@ DECARBOXYLASE_PATTERNS = [
     r"\barginine\s+dihydrolase\s+(?:\+|positive|detected)\b",
     r"\barginine\s+dihydrolase\s+(?:\-|negative|not\s+detected)\b",
     r"\b(ldc|odc|adh)\s*(?:\+|positive|-|negative)\b",
-    r"\bornitihine decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\bornitihine decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)",
+    r"\\blysine\ decarboxylase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (9x)",
+    r"\\bornitihine\ decarboxylase\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (8x)",
 ]
 FERMENTATION_PATTERNS = [
-    r"\blactose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)
-    r"\bxylose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (16x)
-    r"\bmannitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (32x)
-    r"\bsucrose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (39x)
-    r"\bsorbitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (10x)
-    r"\barabinose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
-    r"\bglucose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (83x)
-    r"\bfructose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (3x)
-    r"\bmaltose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
-    r"\brhamnose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
-    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
+    r"\blactose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)",
+    r"\bxylose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (16x)",
+    r"\bmannitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (32x)",
+    r"\bsucrose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (39x)",
+    r"\bsorbitol\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (10x)",
+    r"\barabinose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)",
+    r"\bglucose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (83x)",
+    r"\bfructose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (3x)",
+    r"\bmaltose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)",
+    r"\brhamnose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)",
+    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&    r"\\bmannitol\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (77x)",
+    r"\\bsucrose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (99x)",
+    r"\\blactose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (139x)",
+    r"\\bxylose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (28x)",
+    r"\\barabinose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (12x)",
+    r"\\bglucose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (195x)",
+    r"\\bsorbitol\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (11x)",
+    r"\\bmaltose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (25x)",
+    r"\\bfructose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (3x)",
+    r"\\brhamnose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 22:26:32 (8x)",
+]+)",
     r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)",
-    r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",  # shorthand
+    r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",  # shorthand",
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -397,22 +420,22 @@ def normalize_text(raw: str) -> str:
     t = t.translate(_SUBSCRIPT_DIGITS)
     t = (t.replace("\u2010","-").replace("\u2011","-").replace("\u2012","-")
            .replace("\u2013","-").replace("\u2014","-").replace("–","-").replace("—","-"))
-    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)   # US→UK
-    t = re.sub(r"gray", "grey", t, flags=re.I)          # prefer grey
+    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)   # US→UK",
+    t = re.sub(r"gray", "grey", t, flags=re.I)          # prefer grey",
     t = t.lower()
-    t = re.sub(r"\s+", " ", t).strip()
+    t = re.sub(r"\s+", " ", t).strip()",
     return t
 
 def _normalize_token(s: str) -> str:
     s = s.strip().lower()
     s = s.replace("(", "").replace(")", "")
-    s = re.sub(r"[.,;:!?\-]+$", "", s)
+    s = re.sub(r"[.,;:!?\-]+$", "", s)",
     return s.strip()
 
 def _tokenize_list(s: str) -> List[str]:
-    s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
+    s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)",
     items = [t.strip() for t in s.split(",") if t.strip()]
-    return [re.sub(r"[.,;:\s]+$", "", i) for i in items]
+    return [re.sub(r"[.,;:\s]+$", "", i) for i in items]",
 
 def _canon_value(field: str, value: str) -> str:
     v = (value or "").strip()
@@ -514,7 +537,7 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
 # ──────────────────────────────────────────────────────────────────────────────
 def _split_color_hyphens(s: str) -> List[str]:
     parts = []
-    for token in re.split(r"[;/,]", s):
+    for token in re.split(r"[;/,]", s):",
         token = token.strip()
         if "-" in token and any(c in token for c in ["grey","gray","white","cream","yellow","orange","pink","red","green","blue","brown","beige","tan","black","purple","violet","off"]):
             parts.extend([p.strip() for p in token.split("-") if p.strip()])
@@ -525,7 +548,7 @@ def _split_color_hyphens(s: str) -> List[str]:
 def normalize_cm_phrase(text: str) -> str:
     t = text.lower()
     spans = []
-    m = re.search(r"colon(?:y|ies)\s+(?:are|appear|were|appearing|appeared)\s+([^.]+?)(?:\s+on|\.)", t)
+    m = re.search(r"colon(?:y|ies)\s+(?:are|appear|were|appearing|appeared)\s+([^.]+?)(?:\s+on|\.)", t)",
     if m:
         spans.append(m.group(1))
     spans.append(t)
@@ -537,14 +560,14 @@ def normalize_cm_phrase(text: str) -> str:
             found.append(tok)
 
     for s in spans:
-        for mm in re.findall(r"(?:\d+(?:\.\d+)?\/\d+(?:\.\d+)?mm|\d+(?:\.\d+)?mm|0\.5\/1mm|0\.5mm\/2mm|1\/3mm|2\/3mm|2\/4mm)", s):
+        for mm in re.findall(r"(?:\d+(?:\.\d+)?\/\d+(?:\.\d+)?mm|\d+(?:\.\d+)?mm|0\.5\/1mm|0\.5mm\/2mm|1\/3mm|2\/3mm|2\/4mm)", s):",
             add(mm)
         s_norm = " " + re.sub(r"[,;/]", " ", s) + " "
         multi = ["ground glass","irregular edges","fried egg","dingers ring","off-white","pale yellow","cream-white","grey-cream","mucoid ropey","butyrous"]
         for mword in multi:
             if f" {mword} " in s_norm:
                 add(mword)
-        parts = re.split(r"[,;:/\s]+", s)
+        parts = re.split(r"[,;:/\s]+", s)",
         hyphen_fixed = []
         for p in parts:
             hyphen_fixed.extend(_split_color_hyphens(p))
@@ -558,7 +581,7 @@ def normalize_cm_phrase(text: str) -> str:
 
     order_groups = [
         {"1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm","tiny","small","medium","large","pinpoint","subsurface","satellite"},
-        {"round","circular","convex","flat","domed","heaped","fried egg"},
+        {"round","circular","convex","flat","domed","heaped","fried egg"},",
         {"smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte","shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly",
          "ground glass","irregular edges","spreading","swarming","corrode","pit","ring","dingers ring","bright","pigmented","ropey","butyrous","waxy"},
         {"opaque","translucent","colourless"},
@@ -577,7 +600,7 @@ def normalize_cm_phrase(text: str) -> str:
     pretty = []
     for w in ordered:
         if w == "gray": w = "grey"
-        if re.search(r"\d", w) or w.isupper():
+        if re.search(r"\d", w) or w.isupper():",
             pretty.append(w)
         else:
             if w == "pale yellow": pretty.append("Yellow (Pale)")
@@ -594,7 +617,7 @@ def normalize_cm_phrase(text: str) -> str:
 # LLM prompt
 # ──────────────────────────────────────────────────────────────────────────────
 def _summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
-    cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
+    cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}",
     for f in normalize_columns(db_fields):
         l = f.lower()
         if any(k in l for k in ["gram","shape","morphology","motility","capsule","spore","oxygen requirement","media grown"]):
@@ -604,7 +627,7 @@ def _summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
         elif "fermentation" in l or "utilization" in l:
             cats["Fermentation"].append(f)
         else:
-            cats["Other"].append(f)
+            cats["Other"].append(f)",
     return cats
 
 def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=None) -> str:
@@ -612,7 +635,7 @@ def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=No
     morph = ", ".join(cats["Morphology"][:10])
     enz = ", ".join(cats["Enzyme"][:10])
     ferm = ", ".join(cats["Fermentation"][:10])
-    other = ", ".join(cats["Other"][:10])
+    other = ", ".join(cats["Other"][:10])",
     return (
         "Parse the observation into JSON of microbiology fields. "
         "Focus on morphology, enzyme tests, oxygen/growth, and media. "
@@ -682,7 +705,7 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             if len(grp) >= 1 and grp[0]:
                 span = grp[0]
                 # cut off "but not ..." inside the same positive sentence
-                span = re.split(r"(?i)\bbut\s+not\b", span)[0]
+                span = re.split(r"(?i)\bbut\s+not\b", span)[0]",
                 for a in _tokenize_list(span):
                     set_field_by_base(a, "Positive")
             # 1b) "but not ..." captured in group(1) for second regex
@@ -701,15 +724,15 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
                 set_field_by_base(a, "Negative")
 
     # 3) Negatives after "but not …"
-    for m in re.finditer(r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)", t, flags=re.I):
+    for m in re.finditer(r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)", t, flags=re.I):",
         seg = m.group(1)
-        seg = re.sub(r"\bor\b", ",", seg, flags=re.I)
-        seg = re.sub(r"\bnor\b", ",", seg, flags=re.I)
+        seg = re.sub(r"\bor\b", ",", seg, flags=re.I)",
+        seg = re.sub(r"\bnor\b", ",", seg, flags=re.I)",
         for a in _tokenize_list(seg):
             set_field_by_base(a, "Negative")
 
     # 4) Shorthand: "lactose +" / "rhamnose -"
-    for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t, flags=re.I):
+    for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t, flags=re.I):",
         a, sign = m.group(1), m.group(2)
         set_field_by_base(a, "Positive" if sign == "+" else "Negative")
 
@@ -719,9 +742,9 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             set_field_by_base(base, "Variable")
 
     # 6) LF/NLF short forms
-    if re.search(r"\bnlf\b", t):
+    if re.search(r"\bnlf\b", t):",
         set_field_by_base("lactose", "Negative")
-    if re.search(r"\blf\b", t) and "Lactose Fermentation" not in out:
+    if re.search(r"\blf\b", t) and "Lactose Fermentation" not in out:",
         set_field_by_base("lactose", "Positive")
 
     return out
@@ -763,9 +786,9 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     _apply_learned_patterns("arginine dihydrolase", DECARBOXYLASE_PATTERNS, t, tokens, out, alias)
 
     # 1) Gram
-    if re.search(r"\bgram[-\s]?positive\b", t) and not re.search(r"\bgram[-\s]?negative\b", t):
+    if re.search(r"\bgram[-\s]?positive\b", t) and not re.search(r"\bgram[-\s]?negative\b", t):",
         set_field("gram stain", "Positive")
-    elif re.search(r"\bgram[-\s]?negative\b", t) and not re.search(r"\bgram[-\s]?positive\b", t):
+    elif re.search(r"\bgram[-\s]?negative\b", t) and not re.search(r"\bgram[-\s]?positive\b", t):",
         set_field("gram stain", "Negative")
 
     # 2) Shape
@@ -779,24 +802,24 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif re.search(r"\bmotile\b", t): set_field("motility", "Positive")
 
     # 4) Capsule
-    if re.search(r"\b(capsulated|encapsulated)\b", t):
+    if re.search(r"\b(capsulated|encapsulated)\b", t):",
         set_field("capsule", "Positive")
-    if re.search(r"\bnon[-\s]?capsulated\b|\bcapsule\s+absent\b", t):
+    if re.search(r"\bnon[-\s]?capsulated\b|\bcapsule\s+absent\b", t):",
         set_field("capsule", "Negative")
-    if re.search(r"\bcapsule\s+(?:variable|inconsistent|weak)\b", t):
+    if re.search(r"\bcapsule\s+(?:variable|inconsistent|weak)\b", t):",
         set_field("capsule", "Variable")
 
     # 5) Spore formation
-    if re.search(r"\bnon[-\s]?spore[-\s]?forming\b|\bno\s+spores?\b", t):
+    if re.search(r"\bnon[-\s]?spore[-\s]?forming\b|\bno\s+spores?\b", t):",
         set_field("spore formation", "Negative")
-    if re.search(r"\bspore[-\s]?forming\b|\bspores?\s+present\b", t):
+    if re.search(r"\bspore[-\s]?forming\b|\bspores?\s+present\b", t):",
         set_field("spore formation", "Positive")
 
     # 6) Oxygen requirement
     if re.search(r"\bintracellular\b", t): set_field("oxygen requirement", "Intracellular")
     elif re.search(r"\bcapnophil(ic|e)\b", t): set_field("oxygen requirement", "Capnophilic")
     elif re.search(r"\bmicroaerophil(ic|e)\b", t): set_field("oxygen requirement", "Microaerophilic")
-    elif re.search(r"\bfacultative\b", t) or re.search(r"\bfacultative\s+anaerob", t):
+    elif re.search(r"\bfacultative\b", t) or re.search(r"\bfacultative\s+anaerob", t):",
         set_field("oxygen requirement", "Facultative Anaerobe")
     elif re.search(r"\baerobic\b", t): set_field("oxygen requirement", "Aerobic")
     elif re.search(r"\banaerobic\b", t): set_field("oxygen requirement", "Anaerobic")
@@ -823,23 +846,23 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t): set_field("nitrate reduction", "Negative")
 
     # 9) Haemolysis Type
-    if re.search(r"\b(beta|β)[-\s]?haem", t):
+    if re.search(r"\b(beta|β)[-\s]?haem", t):",
         set_field("haemolysis type", "Beta")
-    elif re.search(r"\b(alpha|α)[-\s]?haem", t):
+    elif re.search(r"\b(alpha|α)[-\s]?haem", t):",
         set_field("haemolysis type", "Alpha")
-    elif re.search(r"\b(gamma|γ)[-\s]?haem\b", t) or re.search(r"\bno\s+haemolysis\b|\bhaemolysis\s+not\s+observed\b", t):
+    elif re.search(r"\b(gamma|γ)[-\s]?haem\b", t) or re.search(r"\bno\s+haemolysis\b|\bhaemolysis\s+not\s+observed\b", t):",
         set_field("haemolysis type", "Gamma")
 
     # 10) Growth temperature (ranges and singles)
-    range1 = re.search(r"grows\s+(\d{1,2})\s*(?:–|-|to)\s*(\d{1,2})\s*°?\s*c", t)
-    range2 = re.search(r"growth\s+(?:between|from)\s+(\d{1,2})\s*(?:and|to)\s*(\d{1,2})\s*°?\s*c", t)
+    range1 = re.search(r"grows\s+(\d{1,2})\s*(?:–|-|to)\s*(\d{1,2})\s*°?\s*c", t)",
+    range2 = re.search(r"growth\s+(?:between|from)\s+(\d{1,2})\s*(?:and|to)\s*(\d{1,2})\s*°?\s*c", t)",
     if range1:
         low, high = range1.group(1), range1.group(2)
         set_field("growth temperature", f"{low}//{high}")
     elif range2:
         low, high = range2.group(1), range2.group(2)
         set_field("growth temperature", f"{low}//{high}")
-    for m in re.finditer(r"(?<!no\s)grows\s+(?:well\s+)?at\s+([0-9]{1,3})\s*°?\s*c", t):
+    for m in re.finditer(r"(?<!no\s)grows\s+(?:well\s+)?at\s+([0-9]{1,3})\s*°?\s*c", t):",
         if out.get("Growth Temperature", "").find("//") == -1:
             set_field("growth temperature", m.group(1))
 
@@ -853,20 +876,20 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     candidate_media = set()
     for name in ["blood", "macconkey", "xld", "nutrient", "tsa", "bhi", "cba", "ba", "ssa", "chocolate", "emb"]:
         if re.search(rf"\b{name}\b", t): candidate_media.add(name)
-    for m in re.finditer(r"\b([a-z0-9\-\+ ]+)\s+agar\b", t):
+    for m in re.finditer(r"\b([a-z0-9\-\+ ]+)\s+agar\b", t):",
         lowname = m.group(1).strip().lower()
         if not any(ex in lowname for ex in MEDIA_EXCLUDE_TERMS):
             candidate_media.add(lowname + " agar")
 
     def canon_media(name: str) -> Optional[str]:
         if name in {"xld"}: return "XLD Agar"
-        if name in {"macconkey"}: return "MacConKey Agar" if False else "MacConkey Agar"  # keep as MacConkey
+        if name in {"macconkey"}: return "MacConKey Agar" if False else "MacConkey Agar"  # keep as MacConkey",
         if name in {"blood","ba","ssa"}: return "Blood Agar"
         if name == "nutrient": return "Nutrient Agar"
         if name == "tsa": return "Tryptic Soy Agar"
         if name == "bhi": return "Brain Heart Infusion Agar"
         if name == "cba": return "Columbia Blood Agar"
-        if name.endswith(" agar"):
+        if name.endswith(" agar"):",
             return name[:-5].strip().title() + " Agar"
         return None
 
@@ -967,8 +990,8 @@ def parse_input_free_text(user_text: str, prior_facts: Dict | None = None, db_fi
         import ollama
         prompt = build_prompt_text(user_text + ("\n\nPast mistakes:\n" + feedback_context if feedback_context else ""), cats, prior_facts)
         model_name = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
-        out = ollama.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
-        m = re.search(r"\{.*\}", out["message"]["content"], re.S)
+        out = ollama.chat(model=model_name, messages=[{"role": "user", "content": prompt}])",
+        m = re.search(r"\{.*\}", out["message"]["content"], re.S)",
         llm_parsed = json.loads(m.group(0)) if m else {}
     except Exception as e:
         # If installed fallback exists, use it; otherwise continue with regex only
@@ -1146,7 +1169,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         return
 
     try:
-        with open(parser_file, "r", encoding="utf-8") as f:
+        with open(parser_file, "r", encoding="utf-8") as f:",
             code = f.read()
     except Exception as e:
         print(f"❌ Could not read parser file: {e}")
@@ -1287,3 +1310,45 @@ if __name__ == "__main__":
 # Gram Stain: Add stronger regex matching for 'Gram Stain' with negation/positive terms (seen 3x)
 # Ornitihine Decarboxylase: Add stronger regex matching for 'Ornitihine Decarboxylase' with negation/positive terms (seen 4x)
 # Rhamnose Fermentation: Add stronger regex matching for 'Rhamnose Fermentation' with negation/positive terms (seen 5x)
+
+# === AUTO-LEARNED PATTERNS SUMMARY (2025-11-10 22:26:32) ===
+# Gram Stain: Add stronger regex matching for 'Gram Stain' with negation/positive terms (seen 116x)
+# Urease: Add stronger regex matching for 'Urease' with negation/positive terms (seen 38x)
+# DNase: Add stronger regex matching for 'DNase' with negation/positive terms (seen 4x)
+# Methyl Red: Add stronger regex matching for 'Methyl Red' with negation/positive terms (seen 54x)
+# Mannitol Fermentation: Add stronger regex matching for 'Mannitol Fermentation' with negation/positive terms (seen 77x)
+# Sucrose Fermentation: Add stronger regex matching for 'Sucrose Fermentation' with negation/positive terms (seen 99x)
+# Lactose Fermentation: Add stronger regex matching for 'Lactose Fermentation' with negation/positive terms (seen 139x)
+# NaCl Tolerant (>=6%): Add stronger regex matching for 'NaCl Tolerant (>=6%)' with negation/positive terms (seen 20x)
+# Motility: Add stronger regex matching for 'Motility' with negation/positive terms (seen 11x)
+# H2S: Add stronger regex matching for 'H2S' with negation/positive terms (seen 11x)
+# Nitrate Reduction: Add stronger regex matching for 'Nitrate Reduction' with negation/positive terms (seen 135x)
+# Xylose Fermentation: Add stronger regex matching for 'Xylose Fermentation' with negation/positive terms (seen 28x)
+# Arabinose Fermentation: Add stronger regex matching for 'Arabinose Fermentation' with negation/positive terms (seen 12x)
+# ONPG: Add stronger regex matching for 'ONPG' with negation/positive terms (seen 18x)
+# Lysine Decarboxylase: Add stronger regex matching for 'Lysine Decarboxylase' with negation/positive terms (seen 9x)
+# Spore Formation: Add stronger regex matching for 'Spore Formation' with negation/positive terms (seen 38x)
+# Media Grown On: Add stronger regex matching for 'Media Grown On' with negation/positive terms (seen 187x)
+# Esculin Hydrolysis: Add stronger regex matching for 'Esculin Hydrolysis' with negation/positive terms (seen 17x)
+# Gelatin Hydrolysis: Add stronger regex matching for 'Gelatin Hydrolysis' with negation/positive terms (seen 21x)
+# Dnase: Add stronger regex matching for 'Dnase' with negation/positive terms (seen 33x)
+# Growth Temperature: Add stronger regex matching for 'Growth Temperature' with negation/positive terms (seen 111x)
+# Colony Morphology: Add stronger regex matching for 'Colony Morphology' with negation/positive terms (seen 156x)
+# Haemolysis Type: Add stronger regex matching for 'Haemolysis Type' with negation/positive terms (seen 4x)
+# Haemolysis: Add stronger regex matching for 'Haemolysis' with negation/positive terms (seen 34x)
+# Glucose Fermentation: Add stronger regex matching for 'Glucose Fermentation' with negation/positive terms (seen 195x)
+# Oxygen Requirement: Add stronger regex matching for 'Oxygen Requirement' with negation/positive terms (seen 49x)
+# Sorbitol Fermentation: Add stronger regex matching for 'Sorbitol Fermentation' with negation/positive terms (seen 11x)
+# Capsule: Add stronger regex matching for 'Capsule' with negation/positive terms (seen 4x)
+# Shape: Add stronger regex matching for 'Shape' with negation/positive terms (seen 33x)
+# Maltose Fermentation: Add stronger regex matching for 'Maltose Fermentation' with negation/positive terms (seen 25x)
+# Indole: Add stronger regex matching for 'Indole' with negation/positive terms (seen 12x)
+# Oxidase: Add stronger regex matching for 'Oxidase' with negation/positive terms (seen 14x)
+# Citrate: Add stronger regex matching for 'Citrate' with negation/positive terms (seen 8x)
+# Odour: Add stronger regex matching for 'Odour' with negation/positive terms (seen 6x)
+# Growth Factors: Add stronger regex matching for 'Growth Factors' with negation/positive terms (seen 3x)
+# Fructose Fermentation: Add stronger regex matching for 'Fructose Fermentation' with negation/positive terms (seen 3x)
+# Glucose Oxidation: Add stronger regex matching for 'Glucose Oxidation' with negation/positive terms (seen 5x)
+# Rhamnose Fermentation: Add stronger regex matching for 'Rhamnose Fermentation' with negation/positive terms (seen 8x)
+# Ornitihine Decarboxylase: Add stronger regex matching for 'Ornitihine Decarboxylase' with negation/positive terms (seen 8x)
+# Arginine dihydrolase: Add stronger regex matching for 'Arginine dihydrolase' with negation/positive terms (seen 6x)
