@@ -1124,15 +1124,21 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
 
         insertion = f"    r{learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
 
-        # Safe substitution pattern (escaped)
+        # Safe regex replacement — avoids writing literal \1 \2 \3
         pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
-        new_code, count = re.subn(pattern_block_regex, r"\\1\\2" + insertion + r"\\3", code, flags=re.S)
+        new_code, count = re.subn(
+            pattern_block_regex,
+            lambda m: m.group(1) + m.group(2) + insertion + m.group(3),
+            code,
+            flags=re.S,
+        )
 
         if count > 0:
             code = new_code
             updated += 1
             print(f"✅ Added learned pattern for {field} → {pattern_list}")
 
+    # Append summary and write file if updated
     if updated > 0:
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f, r in auto_heuristics.items():
