@@ -341,7 +341,6 @@ FERMENTATION_PATTERNS = [
     r"\\bfructose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (3x)
     r"\\bmaltose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
     r"\\brhamnose\ fermentation\\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (5x)
-]+)(?:\.|;|,|$)",
     r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
     r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)",
     r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",  # shorthand
