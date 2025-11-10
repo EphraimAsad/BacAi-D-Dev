@@ -338,7 +338,7 @@ NITRATE_PATTERNS = [
 ESCULIN_PATTERNS = [
     r"\besculin\s+hydrolysis\s*(?:\+|positive)\b",
     r"\besculin\s+hydrolysis\s*(?:\-|negative)\b",
-    r"\besculin\ hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\besculin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 DNASE_PATTERNS = [
     r"\bdnase\s*(?:test)?\s*(?:\+|positive)\b",
@@ -348,7 +348,7 @@ DNASE_PATTERNS = [
 GELATIN_PATTERNS = [
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\+|positive)\b",
     r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\-|negative)\b",
-    r"\bgelatin\ hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (15x)
+    r"\bgelatin hydrolysis\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (15x)
 ]
 LIPASE_PATTERNS = [
     r"\blipase\s*(?:test)?\s*(?:\+|positive)\b",
@@ -364,7 +364,7 @@ DECARBOXYLASE_PATTERNS = [
     r"\barginine\s+dihydrolase\s+(?:\+|positive|detected)\b",
     r"\barginine\s+dihydrolase\s+(?:\-|negative|not\s+detected)\b",
     r"\b(ldc|odc|adh)\s*(?:\+|positive|-|negative)\b",
-    r"\bornitihine\ decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
+    r"\bornitihine decarboxylase\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (4x)
 ]
 FERMENTATION_PATTERNS = [
     r"\blactose\ fermentation\b.*(?:positive|detected|produced)",  # auto-learned 2025-11-10 21:17:08 (71x)
