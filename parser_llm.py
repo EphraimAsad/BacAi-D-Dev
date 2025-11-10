@@ -1,42 +1,34 @@
-# parser_llm.py — v3 (Ollama Cloud only; tense/plural/negation-aware + ranges + media/morphology vocab)
+# parser_llm.py — v4 (Ollama-only + Full Regex + Self-Learning + Auto-Patching + Gold Tests)
 # ──────────────────────────────────────────────────────────────────────────────
-# This module converts free-text microbiology observations into your exact
-# BactAI-D schema. It combines a robust rule-based linguistic layer with an
-# optional LLM pass (Ollama Cloud), then normalizes to your Excel column names.
+# What you get:
+#   • Ollama Cloud LLM parsing (primary) with JSON extraction
+#   • Deterministic regex enrichment for morphology/biochem/fermentations/media
+#   • Persistent self-learning from gold_tests + live runs (3-strike rule)
+#   • Auto-injection of learned regex lines back into this file (permanent)
+#   • CLI: python parser_llm.py --test  → runs gold_tests.json, learns, patches
 #
-# Features:
-# - Unicode & whitespace normalization
-# - Tense/plural/negation-aware parsing (negation scope ±5 tokens)
-# - Conjunction handling for "and/or/nor" + "but not …" negative spans
-# - Heuristics for "Variable" (weak/trace/inconsistent)
-# - Fermentation parser (+/− shorthand; utilities/produces acid)
-# - Haemolysis Type→Haemolysis bridging (Gamma/None → Variable)
-# - Media parsing with TSI-only exclusion + TSA/BHI/CBA/BA/SSA abbreviations
-# - Colony morphology normalization (colours, dashed variants, textures)
-# - Growth temperature ranges "10–40 °C" → "10//40", single temps, “no growth at …”
-# - Abbreviations (MR/VP/LDC/ODC/ADH/LF/NLF)
-# - Streamlit sidebar editor (field-by-field) + Copy JSON + Insert to Sidebar
-# - “What-if” helper: rerun with a hypothetical change (e.g., “what if catalase was negative?”)
-# - Gold Spec runner (starter cases) with diffs
-# - Self-learning hooks: feedback digests → learned_aliases / learned_patterns
-# - Auto-regex patcher: inject learned patterns back into this file (commented & timestamped)
+# Files used:
+#   • gold_tests.json          ← optional input for gold-testing
+#   • parser_feedback.json     ← logs mismatches from tests/runs
+#   • parser_memory.json       ← learned summaries & auto_heuristics
 #
-# Env/Secrets:
-#   OLLAMA_API_KEY  — Ollama Cloud API key (recommended set via Streamlit secrets)
-#   OLLAMA_HOST     — "https://api.ollama.com" (default if absent)
-#   LOCAL_MODEL     — "deepseek-v3.1:671b" (default) or your Ollama model name
-#   BACTAI_STRICT_MODE = "1"  (optional strict schema mode)
+# Env:
+#   • OLLAMA_API_KEY           ← your cloud API key
+#   • LOCAL_MODEL              ← default "deepseek-v3.1:671b"
+#   • BACTAI_STRICT_MODE       ← "1" for strict schema-only output
 #
-# Public functions used by apps:
-#   parse_input_free_text(text, prior_facts=None, db_fields=None) -> Dict[str, str]
-#   apply_what_if(user_text, prior_result, db_fields) -> Dict[str, str]
-#   render_sidebar_json_editor(parsed_dict, db_fields, on_apply_label="Apply Changes") -> Dict[str,str]
-#   run_gold_tests()   # CLI: python parser_llm.py --test
-#   analyze_feedback_and_learn(feedback_path, memory_path)
-#   auto_update_parser_regex(memory_path, parser_file)
+# Public API:
+#   parse_input_free_text(text, prior_facts=None, db_fields=None) -> Dict[str,str]
+#   apply_what_if(user_text, prior_result, db_fields) -> Dict[str,str]
+#   run_gold_tests()  # CLI with --test
+#   analyze_feedback_and_learn()  # called automatically by runner helpers
+#   auto_update_parser_regex()    # writes learned regex into *_PATTERNS lists
+#   enable_self_learning_autopatch(run_tests: bool = False)
 #
-# NOTE: We *only* use Ollama (no OpenAI). If the cloud call fails, we fall back to parser_basic regex only.
-#       We attempt to read Streamlit secrets when available (inside Streamlit), else use environment vars.
+# NOTE: This module uses the installed `ollama` Python package which supports
+#       Ollama Cloud when your environment has OLLAMA_API_KEY.
+#       If the LLM call fails, we fall back to the deterministic regex layer.
+# ──────────────────────────────────────────────────────────────────────────────
 
 import os
 import re
@@ -47,18 +39,19 @@ import difflib
 from datetime import datetime
 from typing import Dict, List, Set, Tuple, Optional
 
-# Fallback regex parser for robustness when LLM is unavailable
-from parser_basic import parse_input_free_text as fallback_parser
-
-# Try to import these lazily where needed to avoid hard dependency when not in Streamlit
-# (We’ll import streamlit only inside functions that render UI; ollama client we create on-demand.)
+# Fallback deterministic parser (your local baseline)
+try:
+    from parser_basic import parse_input_free_text as fallback_parser
+except Exception:
+    fallback_parser = None  # We'll handle if unavailable
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Storage for lightweight learning (kept in /data)
+# Persistent storage paths
 # ──────────────────────────────────────────────────────────────────────────────
 DATA_DIR = os.path.join(os.getcwd(), "data")
-LEARNED_ALIASES_PATH = os.path.join(DATA_DIR, "learned_aliases.json")
-LEARNED_PATTERNS_PATH = os.path.join(DATA_DIR, "learned_patterns.json")
+GOLD_TESTS_PATH = os.path.join(os.getcwd(), "gold_tests.json")
+FEEDBACK_PATH = os.path.join(os.getcwd(), "parser_feedback.json")
+MEMORY_PATH = os.path.join(os.getcwd(), "parser_memory.json")
 
 def _ensure_data_dir():
     try:
@@ -66,34 +59,34 @@ def _ensure_data_dir():
     except Exception:
         pass
 
-def _load_json(path: str) -> dict:
+def _load_json(path: str, default):
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {}
+        return default
 
-def _save_json(path: str, obj: dict):
+def _save_json(path: str, obj):
     try:
         _ensure_data_dir()
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(obj, f, ensure_ascii=False, indent=2)
+            json.dump(obj, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Allowed schema values (from your sheet) + canonicalization
+# Schema allowed values (aligned with your Excel)
 # ──────────────────────────────────────────────────────────────────────────────
 ALLOWED_VALUES: Dict[str, Set[str]] = {
     "Gram Stain": {"Positive", "Negative", "Variable"},
     "Shape": {"Cocci", "Rods", "Bacilli", "Spiral", "Short Rods"},
     "Catalase": {"Positive", "Negative", "Variable"},
     "Oxidase": {"Positive", "Negative", "Variable"},
-    "Colony Morphology": set(),  # free text (normalized)
+    "Colony Morphology": set(),
     "Haemolysis": {"Positive", "Negative", "Variable"},
     "Haemolysis Type": {"None", "Beta", "Gamma", "Alpha"},
     "Indole": {"Positive", "Negative", "Variable"},
-    "Growth Temperature": set(),  # single number or "low//high"
+    "Growth Temperature": set(),
     "Media Grown On": set(),
     "Motility": {"Positive", "Negative", "Variable"},
     "Capsule": {"Positive", "Negative", "Variable"},
@@ -129,7 +122,7 @@ ALLOWED_VALUES: Dict[str, Set[str]] = {
     "Coagulase": {"Positive", "Negative", "Variable"},
 }
 
-# Media whitelist (exact spellings; TSI excluded)
+# Media whitelist (for clamping names; we still accept others; exclude TSI explicitly)
 MEDIA_WHITELIST = {
     "MacConkey Agar","Nutrient Agar","ALOA","Palcam","Preston","Columbia","BP",
     "Mannitol Salt Agar","MRS","Anaerobic Media","XLD Agar","TBG","TCBS","VID",
@@ -141,30 +134,42 @@ MEDIA_WHITELIST = {
     "Iron Media","Sulfur Media","Organic Media","Yeast Extract Agar","Cellulose Agar",
     "Baciillus Media","Pyridoxal","Lcysteine","Ferrous Sulfate Media","Hayflicks Agar",
     "Cell Culture","Intracellular","Brain Heart Infusion Agar","Human Fibroblast Cell Culture","BCYE Agar",
-    # Abbreviations normalize to these:
-    "Tryptic Soy Agar","Brain Heart Infusion Agar","Columbia Blood Agar","Blood Agar"
+    "Columbia Blood Agar","Blood Agar"
 }
-MEDIA_EXCLUDE_TERMS = {"tsi", "triple sugar iron"}  # exclude as media
+MEDIA_EXCLUDE_TERMS = {"tsi", "triple sugar iron"}
 
-# Abbreviations (biochem & media)
+# Abbreviations
 BIOCHEM_ABBR = {
     "mr": "Methyl Red",
     "vp": "VP",
     "ldc": "Lysine Decarboxylase",
     "odc": "Ornitihine Decarboxylase",
     "adh": "Arginine dihydrolase",
-    "lf": "Lactose Fermentation",   # positive bias; NLF handled separately
-    "nlf": "Lactose Fermentation",  # if NLF mentioned, set Negative
+    "lf": "Lactose Fermentation",
+    "nlf": "Lactose Fermentation",
 }
 MEDIA_ABBR = {
     "tsa": "Tryptic Soy Agar",
     "bhi": "Brain Heart Infusion Agar",
     "cba": "Columbia Blood Agar",
     "ssa": "Blood Agar",
-    "ba":  "Blood Agar",
+    "ba": "Blood Agar",
+    "xld": "XLD Agar",
+    "macconkey": "MacConkey Agar",
 }
 
-# Value synonyms & polarity mapping
+# Polarity fields
+POLARITY_FIELDS = {
+    "Catalase","Oxidase","Haemolysis","Indole","Motility","Capsule","Spore Formation",
+    "Methyl Red","VP","Citrate","Urease","H2S","Lactose Fermentation","Glucose Fermentation",
+    "Sucrose Fermentation","Nitrate Reduction","Lysine Decarboxylase","Ornitihine Decarboxylase",
+    "Arginine dihydrolase","Gelatin Hydrolysis","Esculin Hydrolysis","Dnase","ONPG",
+    "NaCl Tolerant (>=6%)","Lipase Test","Xylose Fermentation","Rhamnose Fermentation",
+    "Mannitol Fermentation","Sorbitol Fermentation","Maltose Fermentation","Arabinose Fermentation",
+    "Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation","Coagulase"
+}
+
+# Value synonyms & polarity
 VALUE_SYNONYMS: Dict[str, Dict[str, str]] = {
     "Gram Stain": {
         "gram positive": "Positive","gram-positive": "Positive","g+": "Positive",
@@ -191,68 +196,139 @@ VALUE_SYNONYMS: Dict[str, Dict[str, str]] = {
     "*POLARITY*": {
         "+": "Positive","positive": "Positive","pos": "Positive",
         "-": "Negative","negative": "Negative","neg": "Negative",
-        "weakly positive": "Variable","variable": "Variable","weak": "Variable",
-        "trace": "Variable","slight": "Variable","slightly positive": "Variable"
+        "weakly positive": "Variable","variable": "Variable","weak": "Variable","trace": "Variable","slight": "Variable"
     },
 }
 
-POLARITY_FIELDS = {
-    "Catalase","Oxidase","Haemolysis","Indole","Motility","Capsule","Spore Formation",
-    "Methyl Red","VP","Citrate","Urease","H2S","Lactose Fermentation","Glucose Fermentation",
-    "Sucrose Fermentation","Nitrate Reduction","Lysine Decarboxylase","Ornitihine Decarboxylase",
-    "Arginine dihydrolase","Gelatin Hydrolysis","Esculin Hydrolysis","Dnase","ONPG",
-    "NaCl Tolerant (>=6%)","Lipase Test","Xylose Fermentation","Rhamnose Fermentation",
-    "Mannitol Fermentation","Sorbitol Fermentation","Maltose Fermentation","Arabinose Fermentation",
-    "Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation","Coagulase"
-}
-
-# Negation & “Variable” cues
+# Negation & variable cues (±5 token window)
 NEGATION_CUES = [
     "not produced","no production","not observed","none observed","no reaction",
     "absent","without production","not detected","does not","did not","fails to",
-    "unable to","no growth","non-fermenter","nonfermenter","non fermenter"
+    "unable to","no growth","non-fermenter","nonfermenter","non fermenter","no haemolysis","no hemolysis"
 ]
-VARIABLE_CUES = ["variable","inconsistent","weak","trace","slight","irregular"]
+VARIABLE_CUES = ["variable","inconsistent","weak","trace","slight","equivocal","irregular"]
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Colony morphology vocabulary (tokens we normalize & keep)
-# ──────────────────────────────────────────────────────────────────────────────
+# Colony morphology controlled vocab
 CM_TOKENS = {
-    # sizes & measurements
-    "1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm","small","medium","large","tiny","pinpoint","subsurface","satellite",
-    # shapes/profile
+    "1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm",
+    "tiny","small","medium","large","pinpoint","subsurface","satellite",
     "round","circular","convex","flat","domed","heaped","fried egg",
-    # edges/surface/texture
-    "smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte","shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly",
-    "ground glass","irregular edges","spreading","swarming","corrode","pit","ropey","butyrous","waxy","bright","pigmented","iridescent",
-    # opacity/transparency
+    "smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte",
+    "shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly",
+    "ground glass","irregular edges","spreading","swarming","corrode","pit","ropey","butyrous","waxy",
     "opaque","translucent","colourless","colorless",
-    # moisture
     "dry","moist",
-    # colours (prefer UK spellings)
-    "white","grey","gray","cream","off-white","yellow","pale yellow","orange","pink","coral","red","green","violet","purple","black","brown","beige","tan","blue",
-    # extras
-    "ring","dingers ring"
+    "white","grey","gray","cream","off-white","yellow","pale yellow","orange","pink","coral","red","green",
+    "violet","purple","black","brown","beige","tan","blue",
+    "bright","pigmented","iridescent","ring","dingers ring"
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Utilities: text normalization, schema helpers
+# Pattern lists used by the auto-patcher
+# The self-learning system will append new regex lines into these lists.
+# Extraction routines consult these lists in addition to hardcoded patterns.
 # ──────────────────────────────────────────────────────────────────────────────
+
+OXIDASE_PATTERNS = [
+    r"\boxidase\s*(?:test)?\s*(?:\+|positive|detected)\b",
+    r"\boxidase\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+]
+CATALASE_PATTERNS = [
+    r"\bcatalase\s*(?:test)?\s*(?:\+|positive|detected)\b",
+    r"\bcatalase\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+]
+COAGULASE_PATTERNS = [
+    r"\bcoagulase\s*(?:test)?\s*(?:\+|positive|detected)\b",
+    r"\bcoagulase\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+]
+INDOLE_PATTERNS = [
+    r"\bindole\s*(?:test)?\s*(?:\+|positive|detected)\b",
+    r"\bindole\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+]
+UREASE_PATTERNS = [
+    r"\burease\s*(?:test)?\s*(?:\+|positive|detected)\b",
+    r"\burease\s*(?:test)?\s*(?:\-|negative|not\s+detected|absent)\b",
+    r"\burease\s*(?:test)?\s*(?:variable|weak|trace)\b",
+]
+CITRATE_PATTERNS = [
+    r"\bcitrate\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bcitrate\s*(?:test)?\s*(?:\-|negative)\b",
+]
+MR_PATTERNS = [
+    r"\bmethyl\s+red\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bmethyl\s+red\s*(?:test)?\s*(?:\-|negative)\b",
+    r"\bmr\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bmr\s*(?:test)?\s*(?:\-|negative)\b",
+]
+VP_PATTERNS = [
+    r"\bvp\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bvp\s*(?:test)?\s*(?:\-|negative)\b",
+    r"\bvoges[\s\-]?proskauer\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bvoges[\s\-]?proskauer\s*(?:test)?\s*(?:\-|negative)\b",
+]
+H2S_PATTERNS = [
+    r"\bh\s*2\s*s\s+(?:\+|positive|detected|produced)\b",
+    r"\bh\s*2\s*s\s+(?:\-|negative|not\s+detected|not\s+produced)\b",
+    r"\bproduces\s+h\s*2\s*s\b",
+    r"\bno\s+h\s*2\s*s\s+production\b",
+]
+NITRATE_PATTERNS = [
+    r"\breduces\s+nitrate\b",
+    r"\bdoes\s+not\s+reduce\s+nitrate\b",
+    r"\bnitrate\s+reduction\s+(?:\+|positive)\b",
+    r"\bnitrate\s+reduction\s+(?:\-|negative)\b",
+]
+ESCULIN_PATTERNS = [
+    r"\besculin\s+hydrolysis\s*(?:\+|positive)\b",
+    r"\besculin\s+hydrolysis\s*(?:\-|negative)\b",
+]
+DNASE_PATTERNS = [
+    r"\bdnase\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\bdnase\s*(?:test)?\s*(?:\-|negative)\b",
+]
+GELATIN_PATTERNS = [
+    r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\+|positive)\b",
+    r"\bgelatin\s+(?:liquefaction|hydrolysis)\s*(?:\-|negative)\b",
+]
+LIPASE_PATTERNS = [
+    r"\blipase\s*(?:test)?\s*(?:\+|positive)\b",
+    r"\blipase\s*(?:test)?\s*(?:\-|negative)\b",
+]
+DECARBOXYLASE_PATTERNS = [
+    r"\blysine\s+decarboxylase\s+(?:\+|positive|detected)\b",
+    r"\blysine\s+decarboxylase\s+(?:\-|negative|not\s+detected)\b",
+    r"\bornithine\s+decarboxylase\s+(?:\+|positive|detected)\b",
+    r"\bornithine\s+decarboxylase\s+(?:\-|negative|not\s+detected)\b",
+    r"\bornitihine\s+decarboxylase\s+(?:\+|positive|detected)\b",
+    r"\bornitihine\s+decarboxylase\s+(?:\-|negative|not\s+detected)\b",
+    r"\barginine\s+dihydrolase\s+(?:\+|positive|detected)\b",
+    r"\barginine\s+dihydrolase\s+(?:\-|negative|not\s+detected)\b",
+    r"\b(ldc|odc|adh)\s*(?:\+|positive|-|negative)\b",
+]
+FERMENTATION_PATTERNS = [
+    r"(?:ferments?|utilizes?|produces?\s+acid\s+from)\s+([a-z0-9\.\-%\s,/&]+)(?:\.|;|,|$)",
+    r"(?:does\s+not|doesn't|cannot|unable\s+to)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
+    r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)",
+    r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",  # shorthand
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers: columns, normalization, aliases, tokens
+# ──────────────────────────────────────────────────────────────────────────────
+
 _SUBSCRIPT_DIGITS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
 
 def normalize_columns(db_fields: List[str]) -> List[str]:
-    """Return exact DB fields (minus 'Genus') with original casing kept."""
     return [f for f in (db_fields or []) if f and f.strip().lower() != "genus"]
 
 def normalize_text(raw: str) -> str:
-    """Unicode & whitespace normalization; unify hemolysis→haemolysis; lowercase."""
     t = raw or ""
     t = t.replace("°", " °")
     t = t.translate(_SUBSCRIPT_DIGITS)
     t = (t.replace("\u2010","-").replace("\u2011","-").replace("\u2012","-")
            .replace("\u2013","-").replace("\u2014","-").replace("–","-").replace("—","-"))
-    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)
-    t = re.sub(r"gray", "grey", t, flags=re.I)  # prefer 'grey'
+    t = re.sub(r"hemolys", "haemolys", t, flags=re.I)   # US→UK
+    t = re.sub(r"gray", "grey", t, flags=re.I)          # prefer grey
     t = t.lower()
     t = re.sub(r"\s+", " ", t).strip()
     return t
@@ -264,48 +340,19 @@ def _normalize_token(s: str) -> str:
     return s.strip()
 
 def _tokenize_list(s: str) -> List[str]:
-    """Split using commas and logical conjunctions, return clean tokens."""
     s = re.sub(r"\s*(?:,|and|or|&|nor)\s*", ",", s.strip(), flags=re.I)
     items = [t.strip() for t in s.split(",") if t.strip()]
     return [re.sub(r"[.,;:\s]+$", "", i) for i in items]
 
-def _split_color_hyphens(s: str) -> List[str]:
-    """Split dashed colors like grey-cream → ['grey','cream'].""" 
-    parts = []
-    for token in re.split(r"[;/,]", s):
-        token = token.strip()
-        if "-" in token and any(c in token for c in [
-            "grey","gray","white","cream","yellow","orange","pink","red","green","blue","brown","beige","tan","black","purple","violet","off"
-        ]):
-            parts.extend([p.strip() for p in token.split("-") if p.strip()])
-        else:
-            parts.append(token)
-    return parts
-
-def _set_field_safe(out: Dict[str, str], key: str, val: str):
-    """Safe setter with mild conflict policy (explicit negation wins elsewhere)."""
-    if not val:
-        return
-    cur = out.get(key)
-    if cur is None:
-        out[key] = val
-        return
-    # permit tightening Variable → Positive/Negative
-    if cur == "Variable" and val in {"Positive","Negative"}:
-        out[key] = val
-        return
-    # default: overwrite (our conflict handling is already bias-aware upstream)
-    out[key] = val
-
 def _canon_value(field: str, value: str) -> str:
-    """Clamp values to canonical polarity and allowed terms."""
     v = (value or "").strip()
     if not v:
         return v
     if field in POLARITY_FIELDS:
         low = v.lower()
-        if low in VALUE_SYNONYMS.get("*POLARITY*", {}):
-            v = VALUE_SYNONYMS["*POLARITY*"][low]
+        pol = VALUE_SYNONYMS.get("*POLARITY*", {})
+        if low in pol:
+            v = pol[low]
         else:
             if re.fullmatch(r"\+|positive|pos", low): v = "Positive"
             elif re.fullmatch(r"\-|negative|neg", low): v = "Negative"
@@ -316,32 +363,36 @@ def _canon_value(field: str, value: str) -> str:
     allowed = ALLOWED_VALUES.get(field)
     if allowed and v not in allowed:
         tv = v.title()
-        if tv in allowed:
-            v = tv
+        if tv in allowed: v = tv
     return v
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Field categorization (for LLM prompt context)
-# ──────────────────────────────────────────────────────────────────────────────
-def _summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
-    cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
-    for f in normalize_columns(db_fields):
-        n = f.strip(); l = n.lower()
-        if any(k in l for k in ["gram","shape","morphology","motility","capsule","spore","oxygen requirement","media grown"]):
-            cats["Morphology"].append(n)
-        elif any(k in l for k in ["oxidase","catalase","urease","coagulase","lipase","indole","citrate","vp","methyl red","gelatin","dnase","nitrate","h2s","esculin"]):
-            cats["Enzyme"].append(n)
-        elif "fermentation" in l or "utilization" in l:
-            cats["Fermentation"].append(n)
-        else:
-            cats["Other"].append(n)
-    return cats
+def _set_field_safe(out: Dict[str, str], key: str, val: str):
+    if not val:
+        return
+    cur = out.get(key)
+    if cur is None:
+        out[key] = val
+        return
+    if cur == "Variable" and val in {"Positive","Negative"}:
+        out[key] = val
+        return
+    out[key] = val
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Aliases → exact sheet column names (plus learned aliases)
-# ──────────────────────────────────────────────────────────────────────────────
+def _in_window(tokens: List[str], idx: int, window: int, cues: List[str]) -> bool:
+    start = max(0, idx - window)
+    end = min(len(tokens), idx + window + 1)
+    span = " ".join(tokens[start:end])
+    return any(c in span for c in cues)
+
+def _any_negation_near(tokens: List[str], idx: int, window: int = 5) -> bool:
+    return _in_window(tokens, idx, window, NEGATION_CUES)
+
+def _any_variable_near(tokens: List[str], idx: int, window: int = 5) -> bool:
+    return _in_window(tokens, idx, window, VARIABLE_CUES)
+
 def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
-    exact = {f.lower(): f for f in normalize_columns(db_fields)}
+    fields = normalize_columns(db_fields)
+    exact = {f.lower(): f for f in fields}
     alias: Dict[str, str] = {}
 
     def add(a: str, target: str):
@@ -349,11 +400,11 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
         if t in exact:
             alias[a.lower()] = exact[t]
 
-    # Base fields & common variants
+    # Canonical tests
     add("mr","Methyl Red"); add("methyl red","Methyl Red")
     add("vp","VP"); add("voges proskauer","VP")
-    add("h2s","H2S"); add("dnase","Dnase"); add("gelatin","Gelatin Hydrolysis")
-    add("gelatin liquefaction","Gelatin Hydrolysis")
+    add("h2s","H2S"); add("dnase","Dnase")
+    add("gelatin","Gelatin Hydrolysis"); add("gelatin liquefaction","Gelatin Hydrolysis")
     add("lipase","Lipase Test"); add("lipase test","Lipase Test")
     add("onpg","ONPG"); add("onpg test","ONPG"); add("esculin hydrolysis","Esculin Hydrolysis")
     add("nacl tolerance","NaCl Tolerant (>=6%)"); add("nacl tolerant","NaCl Tolerant (>=6%)"); add("nacl","NaCl Tolerant (>=6%)")
@@ -371,66 +422,37 @@ def build_alias_map(db_fields: List[str]) -> Dict[str, str]:
     add("media grown on","Media Grown On")
     add("oxygen requirement","Oxygen Requirement")
     add("gram stain","Gram Stain"); add("shape","Shape")
-    add("glucose fermantation","Glucose Fermentation")  # intentional typo alias
+    # Sheet typo → canonical
+    add("glucose fermantation","Glucose Fermentation")
 
-    # Biochem abbreviations
-    for abbr, full in BIOCHEM_ABBR.items():
-        add(abbr, full)
-
-    # Fermentation field bases (map "rhamnose" → "Rhamnose Fermentation")
-    for f in normalize_columns(db_fields):
+    # Fermentation bases
+    for f in fields:
         if f.lower().endswith(" fermentation"):
             base = f[:-12].strip().lower()
             alias[base] = f
 
-    # Media names & abbreviations map to “Media Grown On”
+    # Media & abbrev
     for m in MEDIA_WHITELIST:
         alias[m.lower()] = "Media Grown On"
     for abbr, full in MEDIA_ABBR.items():
         alias[abbr.lower()] = "Media Grown On"
 
-    # Learned aliases from previous failures (if any)
-    learned = _load_json(LEARNED_ALIASES_PATH)
-    for k, v in learned.items():
-        if v in exact.values():
-            alias[k.lower()] = v
-
     return alias
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Prompt builders (LLM is only used to assist; regex does the heavy lifting)
-# ──────────────────────────────────────────────────────────────────────────────
-def build_prompt(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
-    prior = json.dumps(prior_facts or {}, indent=2)
-    morph = ", ".join(cats["Morphology"][:10])
-    enz = ", ".join(cats["Enzyme"][:10])
-    ferm = ", ".join(cats["Fermentation"][:10])
-    other = ", ".join(cats["Other"][:10])
-    system = (
-        "You parse microbiology observations into structured results. "
-        "Focus on morphology, enzyme, oxygen/growth traits. Fermentations are handled by rules. "
-        "Return compact JSON; unmentioned fields='Unknown'.\n"
-        f"Morphology: {morph}\nEnzyme: {enz}\nFermentation: {ferm}\nOther: {other}"
-    )
-    return [
-        {"role": "system", "content": system},
-        {"role": "user", "content": f"Previous facts:\n{prior}\nObservation:\n{user_text}"},
-    ]
-
-def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=None):
-    prior = json.dumps(prior_facts or {}, indent=2)
-    return (
-        "Extract morphology, enzyme and growth/oxygen results from this description. "
-        "Leave fermentation mapping mostly to rules. "
-        "Return JSON; unmentioned fields='Unknown'.\n\n"
-        f"Previous facts:\n{prior}\nObservation:\n{user_text}"
-    )
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Colony morphology normalization
 # ──────────────────────────────────────────────────────────────────────────────
+def _split_color_hyphens(s: str) -> List[str]:
+    parts = []
+    for token in re.split(r"[;/,]", s):
+        token = token.strip()
+        if "-" in token and any(c in token for c in ["grey","gray","white","cream","yellow","orange","pink","red","green","blue","brown","beige","tan","black","purple","violet","off"]):
+            parts.extend([p.strip() for p in token.split("-") if p.strip()])
+        else:
+            parts.append(token)
+    return parts
+
 def normalize_cm_phrase(text: str) -> str:
-    """Extract and normalize colony morphology tokens from free text."""
     t = text.lower()
     spans = []
     m = re.search(r"colon(?:y|ies)\s+(?:are|appear|were|appearing|appeared)\s+([^.]+?)(?:\s+on|\.)", t)
@@ -441,34 +463,34 @@ def normalize_cm_phrase(text: str) -> str:
     found: List[str] = []
     def add(tok: str):
         tok = tok.strip()
-        if not tok: return
-        if tok not in found:
+        if tok and tok not in found:
             found.append(tok)
 
     for s in spans:
         for mm in re.findall(r"(?:\d+(?:\.\d+)?\/\d+(?:\.\d+)?mm|\d+(?:\.\d+)?mm|0\.5\/1mm|0\.5mm\/2mm|1\/3mm|2\/3mm|2\/4mm)", s):
             add(mm)
         s_norm = " " + re.sub(r"[,;/]", " ", s) + " "
-        multi = ["ground glass","irregular edges","fried egg","dingers ring","off-white","pale yellow","cream-white"]
+        multi = ["ground glass","irregular edges","fried egg","dingers ring","off-white","pale yellow","cream-white","grey-cream","mucoid ropey","butyrous"]
         for mword in multi:
             if f" {mword} " in s_norm:
                 add(mword)
-
         parts = re.split(r"[,;:/\s]+", s)
         hyphen_fixed = []
         for p in parts:
             hyphen_fixed.extend(_split_color_hyphens(p))
         for p in hyphen_fixed:
             low = p.strip().lower()
-            if low in {"colorless"}: low = "colourless"
+            if low == "colorless": low = "colourless"
             if low in CM_TOKENS:
                 add(low)
+            if low in {"off-white","pale","pale-yellow","cream-white","grey-cream","ropey","butyrous"}:
+                add(low.replace("-", " "))
 
     order_groups = [
         {"1/3mm","1/2mm","2/3mm","2/4mm","0.5/1mm","0.5mm/2mm","1mm","2mm","3mm","tiny","small","medium","large","pinpoint","subsurface","satellite"},
         {"round","circular","convex","flat","domed","heaped","fried egg"},
         {"smooth","rough","wrinkled","granular","mucoid","glistening","dull","matte","shiny","sticky","adherent","powdery","chalk","leathery","velvet","crumbly",
-         "ground glass","irregular edges","spreading","swarming","corrode","pit","ropey","butyrous","waxy","bright","pigmented","iridescent"},
+         "ground glass","irregular edges","spreading","swarming","corrode","pit","ring","dingers ring","bright","pigmented","ropey","butyrous","waxy"},
         {"opaque","translucent","colourless"},
         {"dry","moist"},
         {"white","grey","gray","cream","off-white","yellow","pale yellow","orange","pink","coral","red","green","violet","purple","black","brown","beige","tan","blue"},
@@ -482,44 +504,93 @@ def normalize_cm_phrase(text: str) -> str:
     for tok in found:
         if tok not in seen:
             ordered.append(tok); seen.add(tok)
-
     pretty = []
     for w in ordered:
         if w == "gray": w = "grey"
         if re.search(r"\d", w) or w.isupper():
             pretty.append(w)
         else:
-            if w == "pale yellow":
-                pretty.append("Yellow (Pale)")
-            elif w == "off-white":
-                pretty.append("Off-White")
-            elif w == "cream-white":
-                pretty.append("Cream; White")
-            else:
-                pretty.append(w.title())
+            if w == "pale yellow": pretty.append("Yellow (Pale)")
+            elif w == "off-white": pretty.append("Off-White")
+            elif w == "cream-white": pretty.append("Cream; White")
+            else: pretty.append(w.title())
     flat = []
     for item in pretty:
-        if item == "Cream; White":
-            flat.extend(["Cream","White"])
-        else:
-            flat.append(item)
-
+        if item == "Cream; White": flat.extend(["Cream","White"])
+        else: flat.append(item)
     return "; ".join(flat)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Core extraction (regex): fermentations
+# LLM prompt
+# ──────────────────────────────────────────────────────────────────────────────
+def _summarize_field_categories(db_fields: List[str]) -> Dict[str, List[str]]:
+    cats = {"Morphology": [], "Enzyme": [], "Fermentation": [], "Other": []}
+    for f in normalize_columns(db_fields):
+        l = f.lower()
+        if any(k in l for k in ["gram","shape","morphology","motility","capsule","spore","oxygen requirement","media grown"]):
+            cats["Morphology"].append(f)
+        elif any(k in l for k in ["oxidase","catalase","urease","coagulase","lipase","indole","citrate","vp","methyl red","gelatin","dnase","nitrate","h2s","esculin"]):
+            cats["Enzyme"].append(f)
+        elif "fermentation" in l or "utilization" in l:
+            cats["Fermentation"].append(f)
+        else:
+            cats["Other"].append(f)
+    return cats
+
+def build_prompt_text(user_text: str, cats: Dict[str, List[str]], prior_facts=None) -> str:
+    prior = json.dumps(prior_facts or {}, indent=2)
+    morph = ", ".join(cats["Morphology"][:10])
+    enz = ", ".join(cats["Enzyme"][:10])
+    ferm = ", ".join(cats["Fermentation"][:10])
+    other = ", ".join(cats["Other"][:10])
+    return (
+        "Parse the observation into JSON of microbiology fields. "
+        "Focus on morphology, enzyme tests, oxygen/growth, and media. "
+        "Fermentations can be left if ambiguous; we also apply rule-based parsing. "
+        "Return compact JSON with keys from the provided schema; unmentioned fields='Unknown'.\n"
+        f"Schema hints — Morphology: {morph}\n"
+        f"Enzyme: {enz}\n"
+        f"Fermentation: {ferm}\n"
+        f"Other: {other}\n\n"
+        f"Previous facts:\n{prior}\n\n"
+        f"Observation:\n{user_text}"
+    )
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Apply learned pattern lists (from *_PATTERNS) during extraction
+# ──────────────────────────────────────────────────────────────────────────────
+def _apply_learned_patterns(field_name: str, patterns: List[str], text: str, tokens: List[str], out: Dict[str,str], alias: Dict[str,str]):
+    """
+    For each pattern, decide Positive/Negative/Variable by presence of cue words.
+    This is what makes auto-inserted rules actually affect parsing.
+    """
+    key = alias.get(field_name.lower(), field_name)
+    if not key:
+        key = field_name  # fallback
+
+    for pat in patterns:
+        try:
+            for m in re.finditer(pat, text, flags=re.I|re.S):
+                span = m.group(0).lower()
+                val = None
+                if re.search(r"\b(\+|positive|detected|produced)\b", span): val = "Positive"
+                if re.search(r"\b(\-|negative|not\s+detected|absent|not\s+produced)\b", span): val = "Negative"
+                if re.search(r"\b(variable|weak|trace|slight|inconsistent)\b", span): val = "Variable"
+                if val:
+                    _set_field_safe(out, key, _canon_value(key, val))
+        except re.error:
+            # If a learned regex is malformed, skip gracefully
+            continue
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Fermentation extraction (+ shorthands + negatives and "but not" lists)
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
-    """
-    Parse fermentations with tense/plural/conjunctions & negation window.
-    Handles: ferments/fermented/fermenting/utilizes/utilized/produces acid from…
-    Negative blocks: "does not ferment", "but not X, Y or Z", "unable to utilize"
-    Shorthand: "lactose +", "rhamnose -"
-    """
     out: Dict[str, str] = {}
     t = normalize_text(text)
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
+    tokens = t.split()
 
     ferm_fields = [f for f in fields if f.lower().endswith(" fermentation")]
     base_to_field = {f[:-12].strip().lower(): f for f in ferm_fields}
@@ -531,13 +602,23 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         elif b in alias and alias[b] in fields:
             _set_field_safe(out, alias[b], _canon_value(alias[b], val))
 
-    # POSITIVE lists
-    for m in re.finditer(r"(?:ferments?|utilizes?|produces?\s+acid\s+from)\s+([a-z0-9\.\-%\s,/&]+)", t, flags=re.I):
-        span = re.split(r"(?i)\bbut\s+not\b", m.group(1))[0]
-        for a in _tokenize_list(span):
-            set_field_by_base(a, "Positive")
+    # 1) Learned generic patterns (from FERMENTATION_PATTERNS)
+    for pat in FERMENTATION_PATTERNS:
+        for m in re.finditer(pat, t, flags=re.I|re.S):
+            grp = m.groups()
+            if not grp: 
+                continue
+            # 1a) Positive lists: group(1) — tokens until punctuation
+            if len(grp) >= 1 and grp[0]:
+                span = grp[0]
+                # cut off "but not ..." inside the same positive sentence
+                span = re.split(r"(?i)\bbut\s+not\b", span)[0]
+                for a in _tokenize_list(span):
+                    set_field_by_base(a, "Positive")
+            # 1b) "but not ..." captured in group(1) for second regex
+            # handled by explicit negative block below
 
-    # NEGATIVE lists (explicit)
+    # 2) Explicit negative lists
     neg_pats = [
         r"(?:does\s+not|doesn't)\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
         r"cannot\s+(?:ferment|utilize)\s+([a-z0-9\.\-%\s,/&]+)",
@@ -549,7 +630,7 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
             for a in _tokenize_list(m.group(1)):
                 set_field_by_base(a, "Negative")
 
-    # NEGATIVE after "but not …" (split and/or/nor)
+    # 3) Negatives after "but not …"
     for m in re.finditer(r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)", t, flags=re.I):
         seg = m.group(1)
         seg = re.sub(r"\bor\b", ",", seg, flags=re.I)
@@ -557,45 +638,27 @@ def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, st
         for a in _tokenize_list(seg):
             set_field_by_base(a, "Negative")
 
-    # Shorthand "+/-"
+    # 4) Shorthand: "lactose +" / "rhamnose -"
     for m in re.finditer(r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b", t, flags=re.I):
         a, sign = m.group(1), m.group(2)
         set_field_by_base(a, "Positive" if sign == "+" else "Negative")
 
-    # Variable cues near specific sugars
+    # 5) Variable adjectives per-sugar
     for base in list(base_to_field.keys()):
         if re.search(rf"\b{re.escape(base)}\b\s+(?:variable|inconsistent|weak|trace|slight|irregular)", t, flags=re.I):
             set_field_by_base(base, "Variable")
 
-    # ONPG
-    if re.search(r"\bonpg\s*(?:test)?\s*(?:is\s+)?(\+|positive)\b", t, flags=re.I):
-        if "onpg" in alias and alias["onpg"] in fields:
-            _set_field_safe(out, alias["onpg"], "Positive")
-    elif re.search(r"\bonpg\s*(?:test)?\s*(?:is\s+)?(\-|negative)\b", t, flags=re.I):
-        if "onpg" in alias and alias["onpg"] in fields:
-            _set_field_safe(out, alias["onpg"], "Negative")
-
-    # NaCl tolerant
-    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to|to|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t, flags=re.I):
-        if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
-            _set_field_safe(out, alias["nacl tolerant"], "Positive")
-    if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t, flags=re.I):
-        if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
-            _set_field_safe(out, alias["nacl tolerant"], "Negative")
-    if re.search(r"\bnacl\s+tolerant\b", t, flags=re.I):
-        if "nacl tolerant" in alias and alias["nacl tolerant"] in fields:
-            _set_field_safe(out, alias["nacl tolerant"], "Positive")
-
-    # LF/NLF short forms on MacConkey
+    # 6) LF/NLF short forms
     if re.search(r"\bnlf\b", t):
-        _set_field_safe(out, "Lactose Fermentation", "Negative")
+        set_field_by_base("lactose", "Negative")
     if re.search(r"\blf\b", t) and "Lactose Fermentation" not in out:
-        _set_field_safe(out, "Lactose Fermentation", "Positive")
+        set_field_by_base("lactose", "Positive")
 
     return out
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Core extraction (regex): enzymes / morphology / haemolysis / oxygen / growth / media
+# Biochemical / morphology / oxygen / media extraction
+# Includes consultation of learned pattern lists for each field.
 # ──────────────────────────────────────────────────────────────────────────────
 def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     out: Dict[str, str] = {}
@@ -610,32 +673,56 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         if target in fields:
             _set_field_safe(out, target, _canon_value(target, val))
 
-    # Gram
+    # 0) Apply learned pattern lists up front, so they can set values early
+    _apply_learned_patterns("oxidase", OXIDASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("catalase", CATALASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("coagulase", COAGULASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("indole", INDOLE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("urease", UREASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("citrate", CITRATE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("methyl red", MR_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("vp", VP_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("h2s", H2S_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("nitrate reduction", NITRATE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("esculin hydrolysis", ESCULIN_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("dnase", DNASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("gelatin hydrolysis", GELATIN_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("lipase test", LIPASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("lysine decarboxylase", DECARBOXYLASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("ornithine decarboxylase", DECARBOXYLASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("arginine dihydrolase", DECARBOXYLASE_PATTERNS, t, tokens, out, alias)
+
+    # 1) Gram
     if re.search(r"\bgram[-\s]?positive\b", t) and not re.search(r"\bgram[-\s]?negative\b", t):
         set_field("gram stain", "Positive")
     elif re.search(r"\bgram[-\s]?negative\b", t) and not re.search(r"\bgram[-\s]?positive\b", t):
         set_field("gram stain", "Negative")
 
-    # Shape
+    # 2) Shape
     if re.search(r"\bcocci\b", t): set_field("shape", "Cocci")
     if re.search(r"\brods?\b|bacilli\b", t): set_field("shape", "Rods")
     if re.search(r"\bspiral\b", t): set_field("shape", "Spiral")
     if re.search(r"\bshort\s+rods\b", t): set_field("shape", "Short Rods")
 
-    # Motility
+    # 3) Motility (positive/negative)
     if re.search(r"\bnon[-\s]?motile\b", t): set_field("motility", "Negative")
     elif re.search(r"\bmotile\b", t): set_field("motility", "Positive")
 
-    # Capsule
-    if re.search(r"\b(capsulated|encapsulated)\b", t): set_field("capsule", "Positive")
-    if re.search(r"\bnon[-\s]?capsulated\b|\bcapsule\s+absent\b", t): set_field("capsule", "Negative")
-    if re.search(r"\bcapsule\s+(?:variable|inconsistent|weak)\b", t): set_field("capsule", "Variable")
+    # 4) Capsule
+    if re.search(r"\b(capsulated|encapsulated)\b", t):
+        set_field("capsule", "Positive")
+    if re.search(r"\bnon[-\s]?capsulated\b|\bcapsule\s+absent\b", t):
+        set_field("capsule", "Negative")
+    if re.search(r"\bcapsule\s+(?:variable|inconsistent|weak)\b", t):
+        set_field("capsule", "Variable")
 
-    # Spore formation
-    if re.search(r"\bnon[-\s]?spore[-\s]?forming\b|\bno\s+spores?\b", t): set_field("spore formation", "Negative")
-    if re.search(r"\bspore[-\s]?forming\b|\bspores?\s+present\b", t): set_field("spore formation", "Positive")
+    # 5) Spore formation
+    if re.search(r"\bnon[-\s]?spore[-\s]?forming\b|\bno\s+spores?\b", t):
+        set_field("spore formation", "Negative")
+    if re.search(r"\bspore[-\s]?forming\b|\bspores?\s+present\b", t):
+        set_field("spore formation", "Positive")
 
-    # Oxygen requirement (prioritize specific)
+    # 6) Oxygen requirement
     if re.search(r"\bintracellular\b", t): set_field("oxygen requirement", "Intracellular")
     elif re.search(r"\bcapnophil(ic|e)\b", t): set_field("oxygen requirement", "Capnophilic")
     elif re.search(r"\bmicroaerophil(ic|e)\b", t): set_field("oxygen requirement", "Microaerophilic")
@@ -644,68 +731,36 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif re.search(r"\baerobic\b", t): set_field("oxygen requirement", "Aerobic")
     elif re.search(r"\banaerobic\b", t): set_field("oxygen requirement", "Anaerobic")
 
-    # Generic enzyme tests
-    targets = [
-        "catalase","oxidase","coagulase","urease","lipase","indole",
-        "citrate","vp","methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis"
-    ]
-    for test in targets:
+    # 7) Generic enzyme tests (beyond learned lists)
+    generic_tests = ["catalase","oxidase","coagulase","urease","lipase","indole","citrate","vp","methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis","onpg"]
+    for test in generic_tests:
+        # Positive
         if re.search(rf"\b{test}\s*(?:test)?\s*(?:\+|positive|detected|produced)\b", t):
             set_field(test, "Positive")
+        # Negative
         if re.search(rf"\b{test}\s*(?:test)?\s*(?:\-|negative|not\s+detected|not\s+produced|absent)\b", t):
             set_field(test, "Negative")
-        if re.search(rf"\b{test}\s*(?:test)?\s*(?:weak(?:ly)?\s*positive|variable|trace|slight)\b", t):
+        # Variable
+        if re.search(rf"\b{test}\s*(?:test)?\s*(?:variable|weak|trace|slight)\b", t):
             set_field(test, "Variable")
 
-    # H2S extra phrasing
+    # 8) Special H2S phrasing
     if re.search(r"\bh\s*2\s*s\s+not\s+produced\b", t): set_field("h2s", "Negative")
-    if re.search(r"\bh\s*2\s*s\s+(?:\+|positive|detected|produced)\b", t): set_field("h2s", "Positive")
+    if re.search(r"\bproduces\s+h\s*2\s*s\b", t): set_field("h2s", "Positive")
 
-    # Nitrate (“reduces nitrate”)
-    if re.search(r"\breduces\s+nitrate\b", t): set_field("nitrate", "Positive")
-    if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t): set_field("nitrate", "Negative")
+    # Nitrate alternate phrasing
+    if re.search(r"\breduces\s+nitrate\b", t): set_field("nitrate reduction", "Positive")
+    if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t): set_field("nitrate reduction", "Negative")
 
-    # Haemolysis type (+ “no haemolysis” → Gamma)
-    if re.search(r"\b(beta|β)[-\s]?haem", t): set_field("haemolysis type", "Beta")
-    elif re.search(r"\b(alpha|α)[-\s]?haem", t): set_field("haemolysis type", "Alpha")
+    # 9) Haemolysis Type
+    if re.search(r"\b(beta|β)[-\s]?haem", t):
+        set_field("haemolysis type", "Beta")
+    elif re.search(r"\b(alpha|α)[-\s]?haem", t):
+        set_field("haemolysis type", "Alpha")
     elif re.search(r"\b(gamma|γ)[-\s]?haem\b", t) or re.search(r"\bno\s+haemolysis\b|\bhaemolysis\s+not\s+observed\b", t):
         set_field("haemolysis type", "Gamma")
 
-    # MR/VP abbreviations (reinforce)
-    if re.search(r"\bmr\s*(?:test)?\s*(\+|positive)\b", t): set_field("methyl red", "Positive")
-    if re.search(r"\bmr\s*(?:test)?\s*(\-|negative)\b", t): set_field("methyl red", "Negative")
-    if re.search(r"\bvp\s*(?:test)?\s*(\+|positive)\b", t): set_field("vp", "Positive")
-    if re.search(r"\bvp\s*(?:test)?\s*(\-|negative)\b", t): set_field("vp", "Negative")
-
-    # Decarboxylases / dihydrolase (plural-aware)
-    if re.search(r"\bdecarboxylases?\s+positive\b", t):
-        pre = re.search(r"([a-z,\s]+)decarboxylases?\s+positive", t)
-        if pre:
-            lst = _tokenize_list(pre.group(1))
-            for it in lst:
-                it = it.strip().lower()
-                if it.startswith("lysine"): set_field("lysine decarboxylase", "Positive")
-                if it.startswith("ornithine") or it.startswith("ornitihine"): set_field("ornithine decarboxylase", "Positive")
-                if it.startswith("arginine"): set_field("arginine dihydrolase", "Positive")
-    if re.search(r"\bdecarboxylases?\s+negative\b", t):
-        pre = re.search(r"([a-z,\s]+)decarboxylases?\s+negative", t)
-        if pre:
-            lst = _tokenize_list(pre.group(1))
-            for it in lst:
-                it = it.strip().lower()
-                if it.startswith("lysine"): set_field("lysine decarboxylase", "Negative")
-                if it.startswith("ornithine") or it.startswith("ornitihine"): set_field("ornithine decarboxylase", "Negative")
-                if it.startswith("arginine"): set_field("arginine dihydrolase", "Negative")
-
-    # Singular forms
-    for k, field in [("lysine decarboxylase","lysine decarboxylase"),
-                     ("ornithine decarboxylase","ornithine decarboxylase"),
-                     ("ornitihine decarboxylase","ornitihine decarboxylase"),
-                     ("arginine dihydrolase","arginine dihydrolase")]:
-        if re.search(rf"\b{k}\s+(?:test\s+)?(\+|positive)\b", t): set_field(field, "Positive")
-        if re.search(rf"\b{k}\s+(?:test\s+)?(\-|negative)\b", t): set_field(field, "Negative")
-
-    # Growth temperature: ranges + single temps
+    # 10) Growth temperature (ranges and singles)
     range1 = re.search(r"grows\s+(\d{1,2})\s*(?:–|-|to)\s*(\d{1,2})\s*°?\s*c", t)
     range2 = re.search(r"growth\s+(?:between|from)\s+(\d{1,2})\s*(?:and|to)\s*(\d{1,2})\s*°?\s*c", t)
     if range1:
@@ -714,25 +769,28 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif range2:
         low, high = range2.group(1), range2.group(2)
         set_field("growth temperature", f"{low}//{high}")
-
     for m in re.finditer(r"(?<!no\s)grows\s+(?:well\s+)?at\s+([0-9]{1,3})\s*°?\s*c", t):
         if out.get("Growth Temperature", "").find("//") == -1:
             set_field("growth temperature", m.group(1))
 
-    # Media detection: candidate tokens and "... on X agar" patterns (excluding TSI)
+    # 11) NaCl tolerant
+    if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to|to|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t): set_field("nacl tolerant (>=6%)", "Positive")
+    if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t): set_field("nacl tolerant (>=6%)", "Negative")
+    if re.search(r"\bnacl\s+tolerant\b", t): set_field("nacl tolerant (>=6%)", "Positive")
+
+    # 12) Media detection (exclude TSI)
     collected_media: List[str] = []
     candidate_media = set()
     for name in ["blood", "macconkey", "xld", "nutrient", "tsa", "bhi", "cba", "ba", "ssa", "chocolate", "emb"]:
-        if re.search(rf"\b{name}\b", t):
-            candidate_media.add(name)
+        if re.search(rf"\b{name}\b", t): candidate_media.add(name)
     for m in re.finditer(r"\b([a-z0-9\-\+ ]+)\s+agar\b", t):
         lowname = m.group(1).strip().lower()
         if not any(ex in lowname for ex in MEDIA_EXCLUDE_TERMS):
             candidate_media.add(lowname + " agar")
 
     def canon_media(name: str) -> Optional[str]:
-        if name == "xld": return "XLD Agar"
-        if name == "macconkey": return "MacConkey Agar"
+        if name in {"xld"}: return "XLD Agar"
+        if name in {"macconkey"}: return "MacConKey Agar" if False else "MacConkey Agar"  # keep as MacConkey
         if name in {"blood","ba","ssa"}: return "Blood Agar"
         if name == "nutrient": return "Nutrient Agar"
         if name == "tsa": return "Tryptic Soy Agar"
@@ -753,7 +811,7 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     if collected_media:
         _set_field_safe(out, "Media Grown On", "; ".join(collected_media))
 
-    # Colony morphology
+    # 13) Colony morphology
     cm_value = normalize_cm_phrase(raw)
     if cm_value:
         _set_field_safe(out, "Colony Morphology", cm_value)
@@ -761,7 +819,7 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     return out
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Normalization & Haemolysis bridge & final tidy
+# Normalize to schema + haemolysis bridge + tidy media & morphology
 # ──────────────────────────────────────────────────────────────────────────────
 def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[str, str]:
     fields = normalize_columns(db_fields)
@@ -781,18 +839,16 @@ def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[st
                 out[target] = cv
         else:
             if not strict:
-                pass  # ignore unmapped in lenient mode
+                pass
 
     # Bridge: Haemolysis Type → Haemolysis
     ht = alias.get("haemolysis type"); h = alias.get("haemolysis")
     if ht in out and h in fields:
         tval = out.get(ht, "")
-        if tval in {"Alpha", "Beta"}:
-            out[h] = "Positive"
-        elif tval in {"Gamma", "None"}:
-            out[h] = "Variable"
+        if tval in {"Alpha", "Beta"}: out[h] = "Positive"
+        elif tval in {"Gamma", "None"}: out[h] = "Variable"
 
-    # Clamp media spellings & dedupe
+    # Clamp media & de-dupe
     if "Media Grown On" in out and out["Media Grown On"]:
         parts = [p.strip() for p in out["Media Grown On"].split(";") if p.strip()]
         fixed = []
@@ -805,7 +861,7 @@ def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[st
                 ordered.append(x); seen.add(x)
         out["Media Grown On"] = "; ".join(ordered)
 
-    # Dedupe colony morphology terms
+    # De-dupe colony morphology
     if "Colony Morphology" in out and out["Colony Morphology"]:
         chunks = [c.strip() for c in out["Colony Morphology"].split(";") if c.strip()]
         seen = set(); cleaned = []
@@ -817,50 +873,7 @@ def normalize_to_schema(parsed: Dict[str, str], db_fields: List[str]) -> Dict[st
     return out
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Ollama Cloud chat helper (reads key from Streamlit secrets or env)
-# ──────────────────────────────────────────────────────────────────────────────
-def _ollama_chat_json(prompt: str) -> Dict:
-    """
-    Calls Ollama Cloud with stream=False chat API and tries to parse a top-level JSON object
-    from the assistant message. If anything fails, returns {} (letting regex do the work).
-    """
-    try:
-        # Prefer Streamlit secrets if running inside Streamlit
-        try:
-            import streamlit as st
-            api_key = st.secrets.get("OLLAMA_API_KEY", os.getenv("OLLAMA_API_KEY", ""))
-            host = st.secrets.get("OLLAMA_HOST", os.getenv("OLLAMA_HOST", "https://api.ollama.com"))
-            model_name = st.secrets.get("LOCAL_MODEL", os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b"))
-        except Exception:
-            api_key = os.getenv("OLLAMA_API_KEY", "")
-            host = os.getenv("OLLAMA_HOST", "https://api.ollama.com")
-            model_name = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
-
-        if not api_key:
-            # No key → skip LLM (safe fallback)
-            return {}
-
-        import ollama  # official client
-        # Use a dedicated client so we can pass host and Authorization header for cloud
-        client = ollama.Client(
-            host=host,
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=120,
-        )
-        resp = client.chat(
-            model=model_name,
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.2},
-        )
-        content = (resp.get("message") or {}).get("content", "")
-        m = re.search(r"\{.*\}", content, re.S)
-        return json.loads(m.group(0)) if m else {}
-    except Exception as e:
-        print("⚠️ Ollama Cloud call failed — using fallback regex only:", e)
-        return {}
-
-# ──────────────────────────────────────────────────────────────────────────────
-# MAIN ENTRY (LLM hybrid + regex enrichment + schema normalization)
+# MAIN: Parse (LLM + regex enrichment) → normalize
 # ──────────────────────────────────────────────────────────────────────────────
 def parse_input_free_text(user_text: str, prior_facts: Dict | None = None, db_fields: List[str] | None = None) -> Dict:
     if not (user_text and user_text.strip()):
@@ -868,49 +881,54 @@ def parse_input_free_text(user_text: str, prior_facts: Dict | None = None, db_fi
     db_fields = db_fields or []
     cats = _summarize_field_categories(db_fields)
 
-    # (Optional) few-shot context from past feedback (very light-touch)
-    feedback_examples = []
-    if os.path.exists("parser_feedback.json"):
-        try:
-            with open("parser_feedback.json", "r", encoding="utf-8") as fb:
-                feedback_examples = json.load(fb)[-5:]
-        except Exception:
-            feedback_examples = []
-
+    # 1) Optional few-shot from feedback (last 5 failures)
+    feedback_examples = _load_json(FEEDBACK_PATH, [])
+    feedback_tail = feedback_examples[-5:] if feedback_examples else []
     feedback_context = ""
-    for f in feedback_examples:
-        feedback_context += f"\nExample failed: {f.get('name','')}\nInput: {f.get('text','')}\nErrors: {f.get('errors','')}\n"
+    for f in feedback_tail:
+        name = f.get("name","case")
+        txt = f.get("text","")
+        errs = f.get("errors", [])
+        feedback_context += f"\nExample failed: {name}\nInput: {txt}\nErrors: {errs}\n"
 
-    prompt = build_prompt_text(user_text, cats, prior_facts)
-    if feedback_context:
-        prompt = "The following examples show previous mistakes:\n" + feedback_context + "\n\nNow re-parse:\n" + prompt
+    # 2) LLM pass (Ollama-only). If fail → fallback_parser or regex-only path.
+    llm_parsed = {}
+    try:
+        import ollama
+        prompt = build_prompt_text(user_text + ("\n\nPast mistakes:\n" + feedback_context if feedback_context else ""), cats, prior_facts)
+        model_name = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
+        out = ollama.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
+        m = re.search(r"\{.*\}", out["message"]["content"], re.S)
+        llm_parsed = json.loads(m.group(0)) if m else {}
+    except Exception as e:
+        # If installed fallback exists, use it; otherwise continue with regex only
+        if fallback_parser is not None:
+            try:
+                llm_parsed = fallback_parser(user_text, prior_facts, db_fields)
+            except Exception:
+                llm_parsed = {}
+        else:
+            llm_parsed = {}
 
-    # 1) Optional LLM assist (Ollama Cloud). If no key/failed, we just get {}
-    llm_parsed = _ollama_chat_json(prompt)
-
-    # 2) Regex enrichment
+    # 3) Regex enrichment
     regex_ferm = extract_fermentations_regex(user_text, db_fields)
     regex_bio  = extract_biochem_regex(user_text, db_fields)
 
-    # 3) Merge and normalize
+    # 4) Merge (regex wins on specificity conflicts)
     merged = {}
+    if prior_facts: merged.update(prior_facts)
     merged.update(llm_parsed or {})
     merged.update(regex_ferm)
     merged.update(regex_bio)
 
-    return normalize_to_schema(merged, db_fields)
+    # 5) Normalize
+    normalized = normalize_to_schema(merged, db_fields)
+    return normalized
 
 # ──────────────────────────────────────────────────────────────────────────────
-# WHAT-IF helper: apply conditional change "what if X was Y?" and return new dict
+# WHAT-IF helper
 # ──────────────────────────────────────────────────────────────────────────────
 def apply_what_if(user_text: str, prior_result: Dict[str, str], db_fields: List[str]) -> Dict[str, str]:
-    """
-    Detects 'what if field was value' edits and returns a modified copy.
-    Examples:
-      "what if catalase was negative?"
-      "suppose oxidase became positive"
-      "change motility to negative"
-    """
     if not (user_text and prior_result):
         return prior_result or {}
 
@@ -919,8 +937,8 @@ def apply_what_if(user_text: str, prior_result: Dict[str, str], db_fields: List[
     patterns = [
         r"what\s+if\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes|turned|changed\s+to)\s+([a-z\+\-]+)",
         r"suppose\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes)\s+([a-z\+\-]+)",
-        r"change\s+([a-z\s]+?)\s+to\s+([a-z\+\-]+)",
         r"if\s+it\s+(?:is|was|were)\s+([a-z\s]+?)\s*(?:instead)?\s*(?:of|to)?\s*([a-z\+\-]+)?",
+        r"change\s+([a-z\s]+?)\s+to\s+([a-z\+\-]+)"
     ]
     for pat in patterns:
         m = re.search(pat, txt)
@@ -936,295 +954,117 @@ def apply_what_if(user_text: str, prior_result: Dict[str, str], db_fields: List[
     return prior_result
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STREAMLIT SIDEBAR EDITOR (field-by-field) + Copy JSON + Insert-to-Sidebar
+# GOLD TESTS: load from gold_tests.json (if present), run, and learn
 # ──────────────────────────────────────────────────────────────────────────────
-def render_sidebar_json_editor(parsed_dict: Dict[str, str], db_fields: List[str], on_apply_label: str = "Apply Changes") -> Dict[str,str]:
-    try:
-        import streamlit as st
-    except Exception:
-        return parsed_dict
+def _diff_for_feedback(expected: Dict[str,str], got: Dict[str,str]) -> List[Dict[str,str]]:
+    diffs = []
+    for k, exp in expected.items():
+        g = got.get(k, None)
+        if g is None:
+            diffs.append({"field": k, "expected": exp, "got": ""})
+        elif str(g) != str(exp):
+            diffs.append({"field": k, "expected": exp, "got": g})
+    return diffs
 
-    fields = normalize_columns(db_fields)
-    edited = dict(parsed_dict)
+def _log_feedback_case(name: str, text: str, diffs: List[Dict[str,str]]):
+    if not diffs:
+        return
+    feedback = _load_json(FEEDBACK_PATH, [])
+    feedback.append({
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "name": name,
+        "text": text,
+        "errors": diffs
+    })
+    _save_json(FEEDBACK_PATH, feedback)
 
-    st.sidebar.markdown("### ✏️ Review & Edit Parsed Results")
-    with st.sidebar.expander("Edit fields", expanded=True):
-        for f in fields:
-            allowed = ALLOWED_VALUES.get(f)
-            current = edited.get(f, "")
-            if f == "Growth Temperature":
-                edited[f] = st.text_input(f, value=str(current))
-            elif f in ("Media Grown On","Colony Morphology"):
-                edited[f] = st.text_area(f, value=current, height=64, help="Semicolon-separated values")
-            elif allowed:
-                options = ["", *sorted(list(allowed))]
-                try:
-                    idx = options.index(current) if current in options else 0
-                except ValueError:
-                    idx = 0
-                edited[f] = st.selectbox(f, options, index=idx)
-            else:
-                edited[f] = st.text_input(f, value=current)
+def run_gold_tests(db_fields: Optional[List[str]] = None) -> Tuple[int,int]:
+    print("Running Gold Tests...")
+    tests = _load_json(GOLD_TESTS_PATH, [])
+    if not tests:
+        print("No gold_tests.json found or file empty. Skipping.")
+        return (0, 0)
 
-    c1, c2, c3 = st.sidebar.columns([1,1,1])
-    with c1:
-        if st.button(on_apply_label, use_container_width=True):
-            st.toast("Applied edits to parsed results.", icon="✅")
-    with c2:
-        st.download_button("Copy JSON", data=json.dumps(edited, indent=2), file_name="parsed.json",
-                           mime="application/json", use_container_width=True)
-    with c3:
-        if st.button("Insert to Sidebar", use_container_width=True):
-            st.session_state.setdefault("user_input", {})
-            for k, v in edited.items():
-                st.session_state["user_input"][k] = v or "Unknown"
-            st.toast("Inserted values into sidebar inputs.", icon="🧪")
+    if db_fields is None:
+        # Minimal schema superset
+        db_fields = [
+            "Genus","Gram Stain","Shape","Catalase","Oxidase","Colony Morphology","Haemolysis","Haemolysis Type","Indole",
+            "Growth Temperature","Media Grown On","Motility","Capsule","Spore Formation","Oxygen Requirement","Methyl Red","VP",
+            "Citrate","Urease","H2S","Lactose Fermentation","Glucose Fermentation","Sucrose Fermentation","Nitrate Reduction",
+            "Lysine Decarboxylase","Ornitihine Decarboxylase","Arginine dihydrolase","Gelatin Hydrolysis","Esculin Hydrolysis","Dnase",
+            "ONPG","NaCl Tolerant (>=6%)","Lipase Test","Xylose Fermentation","Rhamnose Fermentation","Mannitol Fermentation",
+            "Sorbitol Fermentation","Maltose Fermentation","Arabinose Fermentation","Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation","Coagulase"
+        ]
 
-    return edited
-
-# ──────────────────────────────────────────────────────────────────────────────
-# GOLD TESTS: starter cases + runner with diffs + learning hooks
-# ──────────────────────────────────────────────────────────────────────────────
-STARTER_DB_FIELDS = [
-    "Gram Stain","Shape","Catalase","Oxidase","Colony Morphology","Haemolysis","Haemolysis Type","Indole",
-    "Growth Temperature","Media Grown On","Motility","Capsule","Spore Formation","Oxygen Requirement","Methyl Red","VP",
-    "Citrate","Urease","H2S","Lactose Fermentation","Glucose Fermentation","Sucrose Fermentation","Nitrate Reduction",
-    "Lysine Decarboxylase","Ornitihine Decarboxylase","Arginine dihydrolase","Gelatin Hydrolysis","Esculin Hydrolysis","Dnase",
-    "ONPG","NaCl Tolerant (>=6%)","Lipase Test","Xylose Fermentation","Rhamnose Fermentation","Mannitol Fermentation","Sorbitol Fermentation",
-    "Maltose Fermentation","Arabinose Fermentation","Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation","Coagulase"
-]
-
-GOLD_CASES: List[Dict] = [
-    {
-        "name": "Salmonella enterica (classic)",
-        "input": (
-            "Gram-negative rod, motile, non-spore-forming. No haemolysis on blood agar. "
-            "Oxidase negative, catalase positive, indole negative. Urease negative, citrate positive, MR positive, VP negative. "
-            "Produces H2S on TSI. Nitrate reduced. Gelatin hydrolysis negative, DNase negative, esculin hydrolysis negative. "
-            "Does not produce coagulase or lipase. Grows at 37 °C (not at 45 °C), facultative anaerobe, not tolerant of 6 % NaCl. "
-            "Ferments glucose, maltose, mannitol, arabinose, xylose, trehalose, but not lactose, sucrose, raffinose, inositol, or rhamnose. ONPG negative. "
-            "Lysine and ornithine decarboxylases positive; arginine dihydrolase negative. No capsule observed."
-        ),
-        "expected": {
-            "Gram Stain":"Negative","Shape":"Rods","Motility":"Positive","Spore Formation":"Negative",
-            "Haemolysis Type":"Gamma","Haemolysis":"Variable","Oxidase":"Negative","Catalase":"Positive","Indole":"Negative",
-            "Urease":"Negative","Citrate":"Positive","Methyl Red":"Positive","VP":"Negative","H2S":"Positive","Nitrate Reduction":"Positive",
-            "Gelatin Hydrolysis":"Negative","Dnase":"Negative","Esculin Hydrolysis":"Negative","Coagulase":"Negative","Lipase Test":"Negative",
-            "Growth Temperature":"37","Oxygen Requirement":"Facultative Anaerobe","NaCl Tolerant (>=6%)":"Negative",
-            "Glucose Fermentation":"Positive","Maltose Fermentation":"Positive","Mannitol Fermentation":"Positive","Arabinose Fermentation":"Positive",
-            "Xylose Fermentation":"Positive","Trehalose Fermentation":"Positive","Lactose Fermentation":"Negative","Sucrose Fermentation":"Negative",
-            "Raffinose Fermentation":"Negative","Inositol Fermentation":"Negative","Rhamnose Fermentation":"Negative","ONPG":"Negative","Capsule":"Negative",
-            "Media Grown On":"Blood Agar; Nutrient Agar; MacConkey Agar"
-        }
-    },
-    {
-        "name": "Staphylococcus aureus",
-        "input": (
-            "Gram-positive cocci. Beta-haemolytic on blood agar. Catalase positive, coagulase positive, DNase positive. "
-            "Oxidase negative. Indole negative. VP positive, MR negative. Citrate variable. Urease variable. H2S negative. "
-            "Grows at 37 °C; aerobic or facultative. Non-motile, non-spore-forming. "
-            "Ferments glucose, mannitol, sucrose; does not ferment lactose or xylose. ONPG negative. NaCl tolerant up to 6%."
-        ),
-        "expected": {
-            "Gram Stain":"Positive","Shape":"Cocci","Haemolysis Type":"Beta","Haemolysis":"Positive",
-            "Catalase":"Positive","Coagulase":"Positive","Dnase":"Positive","Oxidase":"Negative","Indole":"Negative",
-            "VP":"Positive","Methyl Red":"Negative","Citrate":"Variable","Urease":"Variable","H2S":"Negative",
-            "Growth Temperature":"37","Oxygen Requirement":"Facultative Anaerobe","Motility":"Negative","Spore Formation":"Negative",
-            "Glucose Fermentation":"Positive","Mannitol Fermentation":"Positive","Sucrose Fermentation":"Positive",
-            "Lactose Fermentation":"Negative","Xylose Fermentation":"Negative","ONPG":"Negative","NaCl Tolerant (>=6%)":"Positive",
-            "Media Grown On":"Blood Agar; Nutrient Agar"
-        }
-    },
-    {
-        "name": "Listeria monocytogenes",
-        "input": (
-            "Gram-positive short rods, tumbling motility at room temperature; catalase positive, oxidase negative. "
-            "Beta-haemolysis weak. Indole negative. VP negative, MR variable. Urease negative, citrate negative, H2S negative. "
-            "Grows at 4 °C but not 45 °C. Facultative anaerobe. Non-spore-forming. "
-            "Ferments glucose, maltose; does not ferment lactose, xylose, or mannitol. ONPG negative. Esculin hydrolysis positive."
-        ),
-        "expected": {
-            "Gram Stain":"Positive","Shape":"Short Rods","Motility":"Positive","Catalase":"Positive","Oxidase":"Negative",
-            "Haemolysis Type":"Beta","Haemolysis":"Positive","Indole":"Negative","VP":"Negative","Methyl Red":"Variable",
-            "Urease":"Negative","Citrate":"Negative","H2S":"Negative","Oxygen Requirement":"Facultative Anaerobe","Spore Formation":"Negative",
-            "Glucose Fermentation":"Positive","Maltose Fermentation":"Positive","Lactose Fermentation":"Negative","Xylose Fermentation":"Negative",
-            "Mannitol Fermentation":"Negative","ONPG":"Negative","Esculin Hydrolysis":"Positive","Growth Temperature":"4",
-            "Media Grown On":"Blood Agar; Nutrient Agar"
-        }
-    },
-    {
-        "name": "Pseudomonas aeruginosa",
-        "input": (
-            "Gram-negative rods, oxidase positive, catalase positive, indole negative. Motile, non-fermenter on MacConkey (NLF). "
-            "Produces pigments; beta-haemolysis may be observed. Urease variable, citrate positive, H2S negative. "
-            "Aerobic. Grows at 37 °C and 42 °C. Gelatin hydrolysis positive. DNase negative. Nitrate reduced. "
-            "Does not ferment lactose, sucrose, or mannitol; glucose fermentation negative or variable. ONPG negative. "
-            "NaCl tolerance variable."
-        ),
-        "expected": {
-            "Gram Stain":"Negative","Shape":"Rods","Oxidase":"Positive","Catalase":"Positive","Indole":"Negative","Motility":"Positive",
-            "Lactose Fermentation":"Negative","Haemolysis Type":"Beta","Haemolysis":"Positive",
-            "Urease":"Variable","Citrate":"Positive","H2S":"Negative","Oxygen Requirement":"Aerobic","Growth Temperature":"37",
-            "Gelatin Hydrolysis":"Positive","Dnase":"Negative","Nitrate Reduction":"Positive",
-            "Sucrose Fermentation":"Negative","Mannitol Fermentation":"Negative","Glucose Fermentation":"Variable","ONPG":"Negative",
-            "NaCl Tolerant (>=6%)":"Variable","Media Grown On":"MacConkey Agar; Blood Agar"
-        }
-    },
-    {
-        "name": "Enterobacter cloacae complex",
-        "input": (
-            "Gram-negative, motile rods. Facultative anaerobe. Colonies on nutrient agar are 2–3 mm, smooth, convex, moist, grey-cream and slightly translucent. "
-            "Grows on Blood, Nutrient and MacConkey agar (pink colonies). Catalase positive, oxidase negative. Indole negative. MR negative, VP positive. "
-            "Citrate positive. Urease variable. H2S not produced. Nitrate reduced. Gelatin hydrolysis variable. Esculin hydrolysis positive. DNase negative. ONPG positive. "
-            "Grows at 37 °C. Lysine, ornithine and arginine decarboxylases positive. Coagulase negative. Lipase negative. "
-            "Fermented: lactose, glucose, sucrose, mannitol, xylose, arabinose, inositol, maltose, trehalose; raffinose variable. "
-            "Haemolysis not observed."
-        ),
-        "expected": {
-            "Gram Stain":"Negative","Shape":"Rods","Motility":"Positive","Oxygen Requirement":"Facultative Anaerobe",
-            "Colony Morphology":"2/3mm; Smooth; Convex; Moist; Grey; Cream; Translucent",
-            "Media Grown On":"Nutrient Agar; MacConkey Agar; Blood Agar",
-            "Catalase":"Positive","Oxidase":"Negative","Indole":"Negative","Methyl Red":"Negative","VP":"Positive",
-            "Citrate":"Positive","Urease":"Variable","H2S":"Negative","Nitrate Reduction":"Positive",
-            "Gelatin Hydrolysis":"Variable","Esculin Hydrolysis":"Positive","Dnase":"Negative","ONPG":"Positive",
-            "Growth Temperature":"37","Coagulase":"Negative","Lipase Test":"Negative",
-            "Lysine Decarboxylase":"Positive","Ornitihine Decarboxylase":"Positive","Arginine dihydrolase":"Positive",
-            "Lactose Fermentation":"Positive","Glucose Fermentation":"Positive","Sucrose Fermentation":"Positive","Mannitol Fermentation":"Positive",
-            "Xylose Fermentation":"Positive","Arabinose Fermentation":"Positive","Inositol Fermentation":"Positive","Maltose Fermentation":"Positive",
-            "Trehalose Fermentation":"Positive","Raffinose Fermentation":"Variable",
-            "Haemolysis Type":"Gamma","Haemolysis":"Variable"
-        }
-    }
-]
-
-def _diff_dicts(expected: Dict[str,str], got: Dict[str,str]) -> Tuple[List[str], List[str], List[Tuple[str,str,str]]]:
-    missing, extra, mismatched = [], [], []
-    for k in expected.keys():
-        if k not in got:
-            missing.append(k)
-        elif expected[k] != got[k]:
-            mismatched.append((k, expected[k], got[k]))
-    for k in got.keys():
-        if k not in expected:
-            extra.append(k)
-    return missing, extra, mismatched
-
-def _learn_from_failure(input_text: str, expected: Dict[str,str], got: Dict[str,str], db_fields: List[str]):
-    alias = build_alias_map(db_fields)
-    learned_aliases = _load_json(LEARNED_ALIASES_PATH)
-    for k in expected.keys():
-        if k not in got:
-            for abbr, full in BIOCHEM_ABBR.items():
-                if full == k and re.search(rf"\b{abbr}\b", input_text.lower()):
-                    learned_aliases[abbr] = full
-    _save_json(LEARNED_ALIASES_PATH, learned_aliases)
-
-def run_gold_tests():
-    print("Running Gold Spec Tests...\n")
     total, passed = 0, 0
-    dbf = STARTER_DB_FIELDS
-    for case in GOLD_CASES:
+    for case in tests:
         total += 1
-        parsed = parse_input_free_text(case["input"], db_fields=dbf)
-        expected = case["expected"]
-        missing, extra, mismatched = _diff_dicts(expected, parsed)
-        if not missing and not mismatched:
-            print(f"✅ {case['name']} passed.")
+        name = case.get("name", f"case_{total}")
+        input_text = case.get("input","")
+        expected = case.get("expected", {})
+        got = parse_input_free_text(input_text, db_fields=db_fields)
+        diffs = _diff_for_feedback(expected, got)
+        ok = (not diffs)
+        if ok:
             passed += 1
+            print(f"✅ {name} passed.")
         else:
-            print(f"❌ {case['name']} failed.")
-            if missing:
-                print("  Missing fields:")
-                for k in missing: print("   -", k)
-            if mismatched:
-                print("  Mismatched fields:")
-                for (k, e, g) in mismatched:
-                    print(f"   - {k}: expected '{e}' got '{g}'")
-            if extra:
-                print("  Extra fields:")
-                for k in extra: print("   -", k)
-            _learn_from_failure(case["input"], expected, parsed, dbf)
-        print("  Parsed keys:", sorted(list(parsed.keys()))[:8], "..." if len(parsed)>8 else "")
-        print()
-    pct = (passed/total*100.0) if total else 0.0
-    print(f"Result: {passed}/{total} passed ({pct:.1f}%).")
-    if passed < total:
-        print("Hints saved (if any) into /data/learned_aliases.json for review.")
+            print(f"❌ {name} failed.")
+            for d in diffs[:10]:
+                print(f"   - {d['field']}: expected '{d['expected']}' got '{d['got']}'")
+            _log_feedback_case(name, input_text, diffs)
+    print(f"Gold Tests: {passed}/{total} passed.")
+    return (passed, total)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Automated Feedback → Memory digest
+# 🧠 Self-learning: analyze feedback → memory (3-strike heuristics)
 # ──────────────────────────────────────────────────────────────────────────────
-def analyze_feedback_and_learn(feedback_path="parser_feedback.json", memory_path="parser_memory.json"):
-    if not os.path.exists(feedback_path):
-        return
-    try:
-        with open(feedback_path, "r", encoding="utf-8") as f:
-            feedback = json.load(f)
-        if not feedback:
-            return
-    except Exception as e:
-        print(f"⚠️ Feedback load failed: {e}")
+def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_PATH):
+    feedback = _load_json(feedback_path, [])
+    if not feedback:
         return
 
-    memory = {}
-    if os.path.exists(memory_path):
-        try:
-            with open(memory_path, "r", encoding="utf-8") as mf:
-                memory = json.load(mf)
-        except Exception:
-            memory = {}
-
-    rule_suggestions = []
+    memory = _load_json(memory_path, {})
+    history = memory.get("history", [])
     field_counts = {}
+    suggestions = []
 
     for case in feedback:
         for err in case.get("errors", []):
             field = err.get("field")
             got = (err.get("got") or "").lower()
             exp = (err.get("expected") or "").lower()
-            if field:
-                field_counts[field] = field_counts.get(field, 0) + 1
-                sim = difflib.SequenceMatcher(None, got, exp).ratio()
-                if sim < 0.6:
-                    rule_suggestions.append(
-                        f"Consider adjusting pattern for '{field}' — often parsed '{got}' instead of '{exp}'"
-                    )
-
-    summary = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "top_error_fields": sorted(field_counts.items(), key=lambda x: -x[1])[:5],
-        "suggestions": rule_suggestions[:10]
-    }
-    memory.setdefault("history", []).append(summary)
+            if not field:
+                continue
+            field_counts[field] = field_counts.get(field, 0) + 1
+            sim = difflib.SequenceMatcher(None, got, exp).ratio()
+            if sim < 0.6:
+                suggestions.append(f"Consider adjusting pattern for '{field}' — often parsed '{got}' instead of '{exp}'")
 
     auto_heuristics = {}
     for field, count in field_counts.items():
         if count >= 3:
-            auto_heuristics[field] = {
-                "rule": f"Add stronger regex matching for '{field}' with negation/positive terms",
-                "count": count
-            }
+            # Decide a naive polarity direction based on what "expected" often is
+            # We don’t compute full histograms here; simple default:
+            rule = f"Add stronger regex matching for '{field}' with negation/positive terms"
+            auto_heuristics[field] = {"rule": rule, "count": count}
+
+    history.append({
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "top_error_fields": sorted(field_counts.items(), key=lambda x: -x[1])[:10],
+        "suggestions": suggestions[:20]
+    })
+    memory["history"] = history
     memory["auto_heuristics"] = auto_heuristics
-
-    with open(memory_path, "w", encoding="utf-8") as mf:
-        json.dump(memory, mf, indent=2)
-
-    print(f"🧠 Learned {len(rule_suggestions)} new parser hints.")
+    _save_json(memory_path, memory)
+    print(f"🧠 Learned hints for {len(auto_heuristics)} fields; updated memory.")
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Advanced Auto-Updating Regex Heuristic Patcher (inject patterns into this file)
+# 🧬 Auto-update this file’s regex lists from learned heuristics
 # ──────────────────────────────────────────────────────────────────────────────
-def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="parser_llm.py"):
-    if not os.path.exists(memory_path):
-        print("⚠️ No parser memory file found; skipping regex update.")
-        return
-    try:
-        with open(memory_path, "r", encoding="utf-8") as f:
-            memory = json.load(f)
-        auto_heuristics = memory.get("auto_heuristics", {})
-    except Exception as e:
-        print(f"⚠️ Could not read memory file: {e}")
-        return
+def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
+    memory = _load_json(memory_path, {})
+    auto_heuristics = memory.get("auto_heuristics", {})
     if not auto_heuristics:
         print("ℹ️ No new regex heuristics to apply.")
         return
@@ -1236,7 +1076,6 @@ def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="pars
         print(f"❌ Could not read parser file: {e}")
         return
 
-    # Map field → list name to inject (these lists can be created in future versions)
     pattern_lists = {
         "oxidase": "OXIDASE_PATTERNS",
         "catalase": "CATALASE_PATTERNS",
@@ -1257,6 +1096,8 @@ def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="pars
     }
 
     updated = 0
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     for field, rule in auto_heuristics.items():
         field_lower = field.lower()
         pattern_list = None
@@ -1267,43 +1108,58 @@ def auto_update_parser_regex(memory_path="parser_memory.json", parser_file="pars
         if not pattern_list:
             continue
 
-        # Build a naive learned regex (human will refine later if needed)
-        if "positive" in rule["rule"].lower():
-            learned_regex = rf"r\"\\b{field_lower}\\s+(?:test\\s+)?(?:positive|detected)\\b\""
-        elif "negative" in rule["rule"].lower() or "not" in rule["rule"].lower():
-            learned_regex = rf"r\"\\b{field_lower}\\s+(?:test\\s+)?(?:negative|not\\s+detected)\\b\""
+        # Construct a conservative learned regex fragment
+        if any(k in rule["rule"].lower() for k in ["negative","not"]):
+            learned_regex = rf'r"\b{re.escape(field_lower)}\s*(?:test)?\s*(?:-|\bnegative\b|not\s+detected|not\s+produced)\b"'
+        elif "positive" in rule["rule"].lower():
+            learned_regex = rf'r"\b{re.escape(field_lower)}\s*(?:test)?\s*(?:\+|\bpositive\b|detected|produced)\b"'
         else:
-            learned_regex = rf"r\"\\b{field_lower}\\s+reaction\\b\""
+            learned_regex = rf'r"\b{re.escape(field_lower)}\s+reaction\b"'
 
-        comment = f"  # auto-learned {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ({rule['count']}x)\n"
-        insertion = f"    {learned_regex},{comment}"
-
+        insertion = f"    {learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
         pattern_block_regex = rf"({pattern_list}\s*=\s*\[)([^\]]*)(\])"
-        new_code, count = re.subn(pattern_block_regex, rf"\\1\\2{insertion}\\3", code, flags=re.S)
-
+        new_code, count = re.subn(pattern_block_regex, rf"\1\2{insertion}\3", code, flags=re.S)
         if count > 0:
             code = new_code
             updated += 1
             print(f"✅ Added learned pattern for {field} → {pattern_list}")
 
     if updated > 0:
-        code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')}) ===\n"
+        code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f, r in auto_heuristics.items():
             code += f"# {f}: {r['rule']} (seen {r['count']}x)\n"
+
         try:
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
-            print(f"🧠 Updated {parser_file} with {updated} new regex patterns.")
+            print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
     else:
         print("ℹ️ No matching pattern lists found; no changes made.")
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Convenience bootstrap: run learning + optional gold tests + auto-patch
+# Call this once from your Streamlit app startup if you want automatic upkeep.
+# ──────────────────────────────────────────────────────────────────────────────
+def enable_self_learning_autopatch(run_tests: bool = False, db_fields: Optional[List[str]] = None):
+    """
+    Typical Streamlit usage in app.py/app_chat.py:
+        from parser_llm import enable_self_learning_autopatch
+        enable_self_learning_autopatch(run_tests=False)
+    """
+    if run_tests:
+        run_gold_tests(db_fields=db_fields)
+    analyze_feedback_and_learn()
+    auto_update_parser_regex()
+
+# ──────────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+    if "--test" in sys.argv:
         run_gold_tests()
-    else:
-        print("parser_llm.py (Ollama Cloud) loaded. Use --test to run the Gold Spec tests.")
+        analyze_feedback_and_learn()
+        auto_update_parser_regex()
+        sys.exit(0)
+    print("parser_llm.py loaded. Use --test to run gold tests (learns & patches).")
