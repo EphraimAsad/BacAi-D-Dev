@@ -533,7 +533,7 @@ def auto_update_parser_regex():
         if not pat_list:
             continue
         new_line = f'    r"\\\\b{re.escape(field_l)}\\\\b.*(?:positive|negative)",  # learned {data["count"]}x\n'
-        code = re.sub(rf"({pat_list}\s*=\s*\[)([^\]]*)(\])", rf"\1\2{new_line}\3", code, flags=re.S)
+        code = re.sub(rf"({re.escape(pat_list)}\\s*=\\s*\\[)([^\\]]*)(\\])", rf"\1\2{new_line}\3", code, flags=re.S)
         updated += 1
 
     if updated:
