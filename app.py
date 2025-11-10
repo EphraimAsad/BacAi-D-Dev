@@ -13,6 +13,8 @@ from engine import BacteriaIdentifier
 from parser_llm import parse_input_free_text
 from parser_llm import enable_self_learning_autopatch  # unified LLM learner
 from parser_basic import enable_self_learning_autopatch as enable_regex_autopatch  # regex fallback learner
+from parser_llm import enable_self_learning_autopatch, parse_input_free_text as parse_llm_input_free_text
+enable_self_learning_autopatch(run_tests=False)  # safe: runs learning, patches, sanitizes
 
 # --- CONFIG ---
 st.set_page_config(page_title="BactAI-D Assistant", layout="wide")
@@ -256,3 +258,4 @@ def auto_git_commit():
 
 auto_git_commit()
 st.sidebar.success("✅ Learning cycle complete & synced with GitHub.")
+
