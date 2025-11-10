@@ -121,9 +121,7 @@
       "Media Grown On": "Nutrient Agar; MacConkey Agar",
       "Colony Morphology": "Green"
     }
-  }
-]
-[
+  },
   {
     "description": "The isolate is a Gram-negative rod, motile, oxidase negative and catalase positive. It produces H2S on XLD agar and ferments glucose, mannitol and xylose but not lactose or sucrose. Colonies are small and black on XLD agar. It grows well at 37 °C under facultative conditions.",
     "expected": {
