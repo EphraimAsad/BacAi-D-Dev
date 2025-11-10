@@ -1068,6 +1068,7 @@ def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_P
 # 🧬 Auto-update this file’s regex lists from learned heuristics
 # ──────────────────────────────────────────────────────────────────────────────
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
+    """Automatically patch regex pattern lists when heuristics reach threshold (safe version)."""
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
     if not auto_heuristics:
@@ -1113,18 +1114,20 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         if not pattern_list:
             continue
 
-        # Construct a conservative learned regex fragment
-        if any(k in rule["rule"].lower() for k in ["negative","not"]):
-            learned_regex = rf'r"\b{re.escape(field_lower)}\s*(?:test)?\s*(?:-|\bnegative\b|not\s+detected|not\s+produced)\b"'
+        # Build a learned regex string safely (avoid rf"..." with escapes)
+        if any(k in rule["rule"].lower() for k in ["negative", "not"]):
+            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*(?:negative|not\\s+detected|not\\s+produced)"'
         elif "positive" in rule["rule"].lower():
-            learned_regex = rf'r"\b{re.escape(field_lower)}\s*(?:test)?\s*(?:\+|\bpositive\b|detected|produced)\b"'
+            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*(?:positive|detected|produced)"'
         else:
-            learned_regex = rf'r"\b{re.escape(field_lower)}\s+reaction\b"'
+            learned_regex = r'"\\b' + re.escape(field_lower) + r'\\b.*reaction"'
 
-        insertion = f"    {learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
-        # Safe, escaped version to avoid "bad escape" errors
-        pattern_block_regex = rf"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
-        new_code, count = re.subn(pattern_block_regex, rf"\1\2{insertion}\3", code, flags=re.S)
+        insertion = f"    r{learned_regex},  # auto-learned {now} ({rule['count']}x)\n"
+
+        # Safe substitution pattern (escaped)
+        pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
+        new_code, count = re.subn(pattern_block_regex, r"\\1\\2" + insertion + r"\\3", code, flags=re.S)
+
         if count > 0:
             code = new_code
             updated += 1
