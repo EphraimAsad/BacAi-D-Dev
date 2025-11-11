@@ -82,7 +82,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "ALOA"
       },
       {
@@ -118,7 +118,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -159,7 +159,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Nutrient Agar And Macconkey Agar; Nutrient Agar",
+        "got": "Grows On Nutrient Agar And Macconkey Agar; MacConkey Agar; Nutrient Agar",
         "expected": "Nutrient Agar; MacConkey Agar"
       }
     ]
@@ -434,7 +434,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -497,7 +497,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Grows On Chocolate Agar And Thayer Martin Agar; Nutrient Agar; Does Not Grow On Nutrient Agar",
+        "got": "Grows On Chocolate Agar And Thayer Martin Agar; Does Not Grow On Nutrient Agar; Nutrient Agar",
         "expected": "Chocolate Agar; Thayer Martin Agar"
       }
     ]
@@ -936,7 +936,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -1111,7 +1111,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Does Not Grow On Macconkey Agar",
+        "got": "Does Not Grow On Macconkey Agar; MacConkey Agar",
         "expected": "Not MacConkey Agar"
       }
     ]
@@ -1183,7 +1183,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -1214,7 +1214,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Mucoid Pink Colonies On Macconkey Agar",
+        "got": "Mucoid Pink Colonies On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -1302,7 +1302,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -1525,7 +1525,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "ALOA"
       },
       {
@@ -1566,7 +1566,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -1654,7 +1654,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Grows On Bcye Agar; Nutrient Agar; Does Not Grow On Nutrient Agar",
+        "got": "Does Not Grow On Nutrient Agar; Grows On Bcye Agar; Nutrient Agar",
         "expected": "BCYE Agar"
       },
       {
@@ -1700,7 +1700,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -1970,7 +1970,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Colonies Translucent On Nutrient Agar",
+        "got": "Colonies Translucent On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       }
     ]
@@ -2038,7 +2038,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -2116,7 +2116,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2255,7 +2255,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Grows On Xld Agar; XLD Agar",
+        "got": "XLD Agar; Grows On Xld Agar",
         "expected": "XLD Agar"
       },
       {
@@ -2349,7 +2349,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Non-Haemolytic On Blood Agar; Blood Agar",
+        "got": "Blood Agar; Non-Haemolytic On Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2365,7 +2365,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2443,7 +2443,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Non-Haemolytic On Blood Agar; Blood Agar",
+        "got": "Blood Agar; Non-Haemolytic On Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2521,7 +2521,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2552,7 +2552,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows Poorly On Blood Agar",
+        "got": "Grows Poorly On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -2625,7 +2625,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Motile With Swarming Colonies On Blood Agar",
+        "got": "Motile With Swarming Colonies On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -2683,7 +2683,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Produces Pink Colonies On Nutrient Agar",
+        "got": "Produces Pink Colonies On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       },
       {
@@ -2767,7 +2767,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Produces Salmon-Pink Colonies On Nutrient Agar",
+        "got": "Produces Salmon-Pink Colonies On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       },
       {
@@ -2934,7 +2934,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -3008,7 +3008,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Produces Orange Colonies On Nutrient Agar",
+        "got": "Produces Orange Colonies On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       },
       {
@@ -3129,7 +3129,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Produces Pale Yellow Colonies On Nutrient Agar",
+        "got": "Produces Pale Yellow Colonies On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       }
     ]
@@ -3468,7 +3468,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -3504,7 +3504,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey And Xld Agar; XLD Agar",
+        "got": "MacConkey Agar; XLD Agar; Grows On Macconkey And Xld Agar",
         "expected": "MacConkey Agar; XLD Agar"
       },
       {
@@ -3592,7 +3592,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Grows On Nutrient And Chocolate Agar",
+        "got": "Grows On Nutrient And Chocolate Agar; Nutrient Agar",
         "expected": "Nutrient Agar; Chocolate Agar"
       },
       {
@@ -3608,7 +3608,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "And Nutrient Agar; MacConkey Agar; Nutrient Agar",
+        "got": "MacConkey Agar; And Nutrient Agar; Nutrient Agar",
         "expected": "MacConkey Agar; Nutrient Agar"
       },
       {
@@ -3779,7 +3779,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "MacConkey Agar; Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "MacConkey Agar; Blood Agar"
       },
       {
@@ -3866,7 +3866,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Grows On Tcbs And Nutrient Agar; Blood Agar; Beta-Haemolysis Possible On Blood Agar",
+        "got": "Beta-Haemolysis Possible On Blood Agar; Grows On Tcbs And Nutrient Agar; Blood Agar; Nutrient Agar",
         "expected": "TCBS Agar; Nutrient Agar"
       },
       {
@@ -4016,7 +4016,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Nutrient Agar; Grows On Nutrient And Macconkey Agar",
+        "got": "Grows On Nutrient And Macconkey Agar; MacConkey Agar; Nutrient Agar",
         "expected": "Nutrient Agar; MacConkey Agar"
       },
       {
@@ -4094,7 +4094,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Blood Agar; Pink Mucoid Colonies On Nutrient Or Blood Agar",
+        "got": "Pink Mucoid Colonies On Nutrient Or Blood Agar; Blood Agar; Nutrient Agar",
         "expected": "Nutrient Agar; Blood Agar"
       },
       {
@@ -4136,7 +4136,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Growth On Nutrient Agar",
+        "got": "Growth On Nutrient Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       },
       {
@@ -4162,7 +4162,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; MacConkey Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       },
       {
@@ -4435,7 +4435,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       }
     ]
@@ -4461,7 +4461,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -4780,7 +4780,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -4921,7 +4921,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Smooth Colonies On Nutrient Agar",
+        "got": "Smooth Colonies On Nutrient Agar; Nutrient Agar",
         "expected": "Iron Media; Nutrient Agar"
       },
       {
@@ -4973,7 +4973,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       },
       {
@@ -5071,7 +5071,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Grows On Xld Agar; XLD Agar",
+        "got": "XLD Agar; Grows On Xld Agar",
         "expected": "XLD Agar"
       },
       {
@@ -5112,7 +5112,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Grows Aerobically On Macconkey Agar; MacConkey Agar",
+        "got": "MacConkey Agar; Grows Aerobically On Macconkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -5148,7 +5148,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       },
       {
@@ -5277,7 +5277,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Alpha-Haemolytic Colonies On Blood Agar",
+        "got": "Alpha-Haemolytic Colonies On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -5293,7 +5293,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows Aerobically On Blood Agar",
+        "got": "Grows Aerobically On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -5364,7 +5364,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Non-Haemolytic On Blood Agar; Nutrient Agar; Blood Agar; Grey Rough Colonies On Nutrient Agar",
+        "got": "Non-Haemolytic On Blood Agar; Grey Rough Colonies On Nutrient Agar; Blood Agar; Nutrient Agar",
         "expected": "Nutrient Agar"
       }
     ]
@@ -5550,7 +5550,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Beta-Haemolytic On Blood Agar; MacConkey Agar; Blood Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar; Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "MacConkey Agar; Blood Agar"
       },
       {
@@ -5591,7 +5591,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Grows On Tcbs Agar; Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Grows On Tcbs Agar; Blood Agar",
         "expected": "TCBS Agar; Blood Agar"
       },
       {
@@ -5637,7 +5637,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -5906,7 +5906,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Small Alpha-Haemolytic Colonies On Blood Agar; Blood Agar",
+        "got": "Blood Agar; Small Alpha-Haemolytic Colonies On Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -5952,7 +5952,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
@@ -5973,7 +5973,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Grows On Macconkey Agar; MacConkey Agar; Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar; Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -6024,7 +6024,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -6075,7 +6075,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -6091,7 +6091,7 @@
     "errors": [
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       },
       {
@@ -6199,7 +6199,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; MacConkey Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       }
     ]
@@ -6230,7 +6230,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "MacConkey Agar; Grows On Macconkey Agar",
+        "got": "Grows On Macconkey Agar; MacConkey Agar",
         "expected": "MacConkey Agar"
       }
     ]
@@ -6381,7 +6381,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood And Chocolate Agar",
+        "got": "Grows On Blood And Chocolate Agar; Blood Agar",
         "expected": "Blood Agar; Chocolate Agar"
       },
       {
@@ -6784,7 +6784,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -6800,7 +6800,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -6821,7 +6821,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Beta-Haemolytic On Blood Agar",
+        "got": "Beta-Haemolytic On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -6868,7 +6868,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -6910,7 +6910,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       }
     ]
@@ -7229,7 +7229,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Nutrient Agar; Grows On Blood And Nutrient Agar; Blood Agar",
+        "got": "Grows On Blood And Nutrient Agar; Blood Agar; Nutrient Agar",
         "expected": "Blood Agar; Nutrient Agar"
       },
       {
@@ -7260,7 +7260,7 @@
       },
       {
         "field": "Media Grown On",
-        "got": "Blood Agar; Grows On Blood Agar",
+        "got": "Grows On Blood Agar; Blood Agar",
         "expected": "Blood Agar"
       },
       {
