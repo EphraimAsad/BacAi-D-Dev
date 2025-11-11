@@ -1348,6 +1348,10 @@ def enable_self_learning_autopatch(run_tests: bool = False, db_fields: Optional[
     analyze_feedback_and_learn()
     auto_update_parser_regex()
 
+# At the very end of auto_update_parser_regex(), after the write/sanitize passes:
+if os.getenv("ENABLE_AUTO_COMMIT", "false").lower() == "true":
+    auto_commit_changes()
+
 # CLI
 if __name__ == "__main__":
     # Defensive cleanups if you ever call this directly
