@@ -276,40 +276,64 @@ st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain 
 # AUTO-GIT COMMIT (Streamlit Cloud Safe)
 # ──────────────────────────────────────────────────────────────────────────────
 def auto_git_commit():
-    """Pushes learned updates safely back to GitHub."""
-    gh_token = os.getenv("GH_TOKEN")
-    gh_repo = os.getenv("GITHUB_REPO")
-    branch = os.getenv("GIT_BRANCH", "main")
-    email = os.getenv("GIT_USER_EMAIL", "bot@bactaid.local")
-    name = os.getenv("GIT_USER_NAME", "BactAI-D AutoLearner")
+    import subprocess, os
+    from datetime import datetime
 
-    if not gh_token or not gh_repo:
+    # Read token from Streamlit secrets env (GH_TOKEN is what you set)
+    token = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN")
+    repo  = os.getenv("GITHUB_REPO")  # e.g. "EphraimAsad/BacAi-D-Dev"
+    branch = os.getenv("GIT_BRANCH", "main")
+    email = os.getenv("GITHUB_EMAIL", os.getenv("GIT_USER_EMAIL", "bot@bactaid.local"))
+    name  = os.getenv("GITHUB_NAME", os.getenv("GIT_USER_NAME", "BactAI-D AutoLearner"))
+
+    if not token or not repo:
         print("⚠️ GitHub credentials not found; skipping auto-commit.")
         return
 
     try:
-        subprocess.run(["git", "config", "--global", "user.email", email], check=False)
-        subprocess.run(["git", "config", "--global", "user.name", name], check=False)
-        subprocess.run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()], check=False)
+        # Identity + safe directory
+        subprocess.run(["git", "config", "--global", "user.email", email], check=True)
+        subprocess.run(["git", "config", "--global", "user.name", name], check=True)
+        subprocess.run(['git', 'config', '--global', '--add', 'safe.directory', os.getcwd()], check=False)
 
-        remote_url = f"https://{gh_token}@github.com/{gh_repo}.git"
-        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=False)
+        # QUICK DEBUG
+        print(f"🔧 DEBUG repo={repo} branch={branch}")
 
-        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if not result.stdout.strip():
-            print("ℹ️ No local changes to commit — skipping Git push.")
+        # Stage relevant project files (now includes engine.py + app files)
+        files_to_add = [
+            "engine.py",
+            "app.py",
+            "app_chat.py",
+            "parser_llm.py",
+            "parser_basic.py",
+            "parser_memory.json",
+            "parser_feedback.json",
+            "gold_tests.json",
+            "bacteria_db.xlsx",
+            "data/bacteria_db.xlsx",
+        ]
+        # Add only those that exist (avoids errors)
+        for f in files_to_add:
+            if os.path.exists(f):
+                subprocess.run(["git", "add", f], check=False)
+
+        # If you prefer to stage ALL tracked changes instead, uncomment:
+        # subprocess.run(["git", "add", "-u"], check=False)
+
+        # Any staged changes?
+        status = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True, text=True)
+        if not status.stdout.strip():
+            print("ℹ️ No staged changes; nothing to commit.")
             return
 
-        subprocess.run([
-            "git", "add",
-            "parser_llm.py", "parser_basic.py",
-            "parser_memory.json", "parser_feedback.json"
-        ], check=False)
+        msg = f"🤖 Auto-learned update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", msg], check=False)
 
-        commit_msg = f"🤖 Auto-learn update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
-        subprocess.run(["git", "push", "origin", f"HEAD:{branch}"], check=False)
-        print("✅ Auto-commit and push completed.")
+        remote_url = f"https://{token}@github.com/{repo}.git"
+        print(f"🔧 DEBUG pushing to {remote_url} HEAD:{branch}")
+        subprocess.run(["git", "push", remote_url, f"HEAD:{branch}"], check=True)
+
+        print("✅ Successfully committed & pushed updates to GitHub.")
     except Exception as e:
         print(f"⚠️ Auto-commit failed: {e}")
 
