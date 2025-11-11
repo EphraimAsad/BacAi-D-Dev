@@ -319,3 +319,64 @@ if user_msg:
     st.session_state.last_results = results
     st.session_state.history.append({"role": "assistant", "content": reply})
     st.chat_message("assistant").markdown(reply)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 🔄 AUTO-GIT COMMIT (Full integration for Streamlit Cloud)
+# ──────────────────────────────────────────────────────────────────────────────
+def auto_git_commit():
+    """Automatically commit parser learning updates and push to GitHub."""
+    import subprocess
+    from datetime import datetime
+
+    token = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN")
+    repo = os.getenv("GITHUB_REPO")
+    branch = os.getenv("GIT_BRANCH", "main")
+    email = os.getenv("GIT_USER_EMAIL", os.getenv("GITHUB_EMAIL", "bot@bactaid.local"))
+    name = os.getenv("GIT_USER_NAME", os.getenv("GITHUB_NAME", "BactAI-D AutoCommit"))
+
+    if not token or not repo:
+        print("⚠️ Missing GitHub credentials (GH_TOKEN/GITHUB_REPO). Skipping auto-commit.")
+        return
+
+    try:
+        # Configure Git identity & safety
+        subprocess.run(["git", "config", "--global", "user.email", email], check=False)
+        subprocess.run(["git", "config", "--global", "user.name", name], check=False)
+        subprocess.run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()], check=False)
+
+        # Stage relevant files (learning-related & core engine)
+        files_to_add = [
+            "parser_llm.py",
+            "parser_basic.py",
+            "parser_memory.json",
+            "parser_feedback.json",
+            "engine.py",
+            "gold_tests.json"
+        ]
+        for f in files_to_add:
+            if os.path.exists(f):
+                subprocess.run(["git", "add", f], check=False)
+
+        # Check for staged changes
+        status = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True, text=True)
+        if not status.stdout.strip():
+            print("ℹ️ No staged changes to commit.")
+            return
+
+        msg = f"🤖 Auto-learn update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", msg], check=False)
+
+        remote_url = f"https://{token}@github.com/{repo}.git"
+        subprocess.run(["git", "push", remote_url, f"HEAD:{branch}"], check=True)
+        print("✅ Auto-commit and push completed successfully.")
+    except Exception as e:
+        print(f"⚠️ Auto-commit failed: {e}")
+
+
+# Auto-run commit after gold test learning or feedback changes
+if os.path.exists("parser_memory.json") or os.path.exists("parser_feedback.json"):
+    try:
+        auto_git_commit()
+        st.sidebar.success("✅ Auto-commit to GitHub completed.")
+    except Exception as e:
+        st.sidebar.warning(f"⚠️ Auto-commit skipped: {e}")
