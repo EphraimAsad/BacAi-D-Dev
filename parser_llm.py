@@ -1355,6 +1355,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             print(f"✅ Added learned pattern(s) for '{field}' → {list_name}")
 
     # Append summary comment and write back if changed
+        # Append summary comment and write back if changed
     if updated > 0:
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
         for f_name, rinfo in auto_heuristics.items():
@@ -1368,14 +1369,16 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             _sanitize_auto_learned_patterns(parser_file)
             _repair_parser_file(parser_file)
 
-            # 🔐 Do the commit *after* we successfully updated the file
-            if os.getenv("ENABLE_AUTO_COMMIT", "false").lower() == "true":
-                auto_commit_changes()
-
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
+
     else:
         print("ℹ️ No new unique patterns to add.")
+
+    # 🔐 Always do commit after learning (even if only memory changed)
+    if os.getenv("ENABLE_AUTO_COMMIT", "false").lower() == "true":
+        auto_commit_changes()
+
 
 # Convenience bootstrap: run learning + optional gold tests + auto-patch
 def enable_self_learning_autopatch(run_tests: bool = False, db_fields: Optional[List[str]] = None):
