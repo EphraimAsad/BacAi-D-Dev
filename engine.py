@@ -69,7 +69,6 @@ class IdentificationResult:
             "Considering the entered reactions and colony traits,"
         ])
 
-        # Key descriptive highlights
         highlights = []
         if "Gram Stain" in self.matched_fields:
             highlights.append(f"it is **Gram {self.reasoning_factors.get('Gram Stain', '').lower()}**")
@@ -82,17 +81,13 @@ class IdentificationResult:
         if "Oxygen Requirement" in self.matched_fields:
             highlights.append(f"which prefers **{self.reasoning_factors.get('Oxygen Requirement', '').lower()}** conditions")
 
-        # Join highlights grammatically
         summary = ", ".join(highlights[:-1]) + " and " + highlights[-1] if len(highlights) > 1 else "".join(highlights)
-
-        # Confidence text
         confidence_text = (
             "The confidence in this identification is high."
             if self.confidence_percent() >= 70
             else "The confidence in this identification is moderate."
         )
 
-        # Comparative reasoning vs other close results
         comparison = ""
         if ranked_results and len(ranked_results) > 1:
             close_others = ranked_results[1:3]
@@ -120,23 +115,21 @@ class BacteriaIdentifier:
     def compare_field(self, db_val, user_val, field_name):
         """Compare one test field between database and user input."""
         if not user_val or str(user_val).strip() == "" or user_val.lower() == "unknown":
-            return 0  # Skip empty or unknown
+            return 0
 
         db_val = str(db_val).strip().lower()
         user_val = str(user_val).strip().lower()
-        hard_exclusions = ["Gram Stain", "Shape", "Spore Formation"]
+        hard_exclusions = {"Spore Formation"}  # Only spores are strict now
 
-        # Split entries by separators for multi-value matches
-        db_options = re.split(r"[;/]", db_val)
-        user_options = re.split(r"[;/]", user_val)
-        db_options = [x.strip() for x in db_options if x.strip()]
-        user_options = [x.strip() for x in user_options if x.strip()]
+        # Split entries for multi-value matching
+        db_options = [x.strip() for x in re.split(r"[;/]", db_val) if x.strip()]
+        user_options = [x.strip() for x in re.split(r"[;/]", user_val) if x.strip()]
 
-        # Handle "variable" logic
+        # Skip “Variable” matches
         if "variable" in db_options or "variable" in user_options:
             return 0
 
-        # Special handling for Growth Temperature
+        # Growth Temperature numeric handling
         if field_name == "Growth Temperature":
             try:
                 if "//" in db_val:
@@ -146,21 +139,31 @@ class BacteriaIdentifier:
             except:
                 return 0
 
-        # Flexible match: partial overlap counts as match
-        match_found = any(any(u in db_opt or db_opt in u for db_opt in db_options) for u in user_options)
+        # NaCl tolerance: interpret ≥6% as a binary
+        if "nacl" in field_name.lower():
+            if "positive" in user_val or "growth" in user_val:
+                return 1 if "positive" in db_val or "growth" in db_val else -1
+            if "negative" in user_val or "no growth" in user_val:
+                return 1 if "negative" in db_val or "no" in db_val else -1
+
+        # Fuzzy overlap match
+        match_found = any(
+            any(u in db_opt or db_opt in u for db_opt in db_options)
+            for u in user_options
+        )
 
         if match_found:
             return 1
         else:
             if field_name in hard_exclusions:
-                return -999  # Hard exclusion
+                return -999
             return -1
 
     # -----------------------------
     # Suggest Next Tests
     # -----------------------------
     def suggest_next_tests(self, top_results):
-        """Suggest 3 tests that best differentiate top matches."""
+        """Suggest tests that best differentiate top matches."""
         if len(top_results) < 2:
             return []
         varying_fields = []
@@ -203,13 +206,12 @@ class BacteriaIdentifier:
                 user_val = user_input.get(field, "")
                 score = self.compare_field(db_val, user_val, field)
 
-                # Count only real inputs for relative confidence
                 if user_val and user_val.lower() != "unknown":
                     total_fields_evaluated += 1
 
                 if score == -999:
                     total_score = -999
-                    break  # Hard exclusion ends comparison
+                    break
 
                 elif score == 1:
                     total_score += 1
@@ -220,7 +222,6 @@ class BacteriaIdentifier:
                     total_score -= 1
                     mismatched_fields.append(field)
 
-            # Append valid genus
             if total_score > -999:
                 extra_notes = row.get("Extra Notes", "")
                 results.append(
@@ -236,17 +237,11 @@ class BacteriaIdentifier:
                     )
                 )
 
-        # Sort descending by total score
         results.sort(key=lambda x: x.total_score, reverse=True)
 
-        # Generate next-test suggestions for top 3
         if results:
             top_suggestions = self.suggest_next_tests(results)
             for r in results[:3]:
                 r.reasoning_factors["next_tests"] = ", ".join(top_suggestions)
 
-        # Return top 10 results
         return results[:10]
-
-
-
