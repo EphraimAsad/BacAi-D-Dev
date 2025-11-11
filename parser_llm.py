@@ -1275,43 +1275,131 @@ def extract_fermentations_regex(text, db_fields=None):
 # ──────────────────────────────────────────────────────────────────────────────
 
 def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
+    """
+    Regex-first biochemical/morphology/media extraction with captured-group support.
+
+    Improvements:
+    - Supports auto-learned patterns that use (?P<base>...) for:
+        * DECARBOXYLASE_PATTERNS  (lysine / ornithine / arginine)
+        * GELATIN_PATTERNS        (gelatin hydrolysis)
+        * ESCULIN_PATTERNS        (esculin hydrolysis)
+        * MR_PATTERNS             (methyl red)
+        * NITRATE_PATTERNS        (nitrate reduction)
+    - Ensures decarboxylase matches map ONLY to their correct target field.
+    - Keeps the rest of the rule-based normalization intact.
+    """
     out: Dict[str, str] = {}
     raw = text or ""
     t = normalize_text(raw)
     fields = normalize_columns(db_fields)
     alias = build_alias_map(db_fields)
+    tokens = t.split()
 
-    def set_field(k_like: str, val: str) -> None:
+    def set_field(k_like: str, val: str):
+        """Route via alias into canonical field name and set with normalization."""
         target = alias.get(k_like.lower(), k_like)
         if target in fields:
             _set_field_safe(out, target, _canon_value(target, val))
 
-    # 0) Apply learned pattern lists up front, so they can set values early
-    _apply_learned_patterns("oxidase", OXIDASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("catalase", CATALASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("coagulase", COAGULASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("indole", INDOLE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("urease", UREASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("citrate", CITRATE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("methyl red", MR_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("vp", VP_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("h2s", H2S_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("nitrate reduction", NITRATE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("esculin hydrolysis", ESCULIN_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("dnase", DNASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("gelatin hydrolysis", GELATIN_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("lipase test", LIPASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("lysine decarboxylase", DECARBOXYLASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("ornithine decarboxylase", DECARBOXYLASE_PATTERNS, t, [], out, alias)
-    _apply_learned_patterns("arginine dihydrolase", DECARBOXYLASE_PATTERNS, t, [], out, alias)
+    def polarity_from_span(span: str) -> Optional[str]:
+        """Infer Positive / Negative / Variable from a matched substring."""
+        s = span.lower()
+        if re.search(r"\b(negative|not\s+detected|not\s+produced|absent)\b", s):
+            return "Negative"
+        if re.search(r"\b(variable|weak|trace|slight|inconsistent)\b", s):
+            return "Variable"
+        if re.search(r"\b(\+|positive|detected|produced)\b", s):
+            return "Positive"
+        return None
 
-    # 1) Gram
+    # -------------------------------------------------------------------------
+    # 0) Handle captured-group patterns FIRST for families that can cross-map
+    #    (so they don’t get incorrectly set by generic learned patterns).
+    # -------------------------------------------------------------------------
+
+    # 0a) Decarboxylases with (?P<base>lysine|ornithine|arginine)
+    #    Map base → canonical column
+    decarb_map = {
+        "lysine": "Lysine Decarboxylase",
+        "ornithine": "Ornitihine Decarboxylase",   # keep sheet’s canonical spelling
+        "ornitihine": "Ornitihine Decarboxylase",  # tolerate learned typo
+        "arginine": "Arginine dihydrolase",
+    }
+    for pat in DECARBOXYLASE_PATTERNS:
+        try:
+            for m in re.finditer(pat, t, flags=re.I | re.S):
+                span = m.group(0)
+                pol = polarity_from_span(span) or "Positive"
+                base = m.groupdict().get("base", "") if m.lastgroup else ""
+                base = (base or "").strip().lower()
+
+                # If we have a captured base, map it precisely.
+                if base in decarb_map:
+                    target = decarb_map[base]
+                    if target in fields:
+                        _set_field_safe(out, target, _canon_value(target, pol))
+                    continue
+
+                # Otherwise, fall back to explicit tokens inside the span.
+                # (This also helps when the learned rule didn’t capture `base`.)
+                for key, target in decarb_map.items():
+                    if re.search(rf"\b{re.escape(key)}\s+decarboxylase\b", span, flags=re.I):
+                        if target in fields:
+                            _set_field_safe(out, target, _canon_value(target, pol))
+        except re.error:
+            continue
+
+    # 0b) Esculin, Gelatin, MR, Nitrate with optional (?P<base>...)
+    #     We don’t *need* the base, but support it if present (for consistency).
+    def apply_simple_family(patterns, target_field: str):
+        if target_field not in fields:
+            return
+        for pat in patterns:
+            try:
+                for m in re.finditer(pat, t, flags=re.I | re.S):
+                    span = m.group(0)
+                    pol = polarity_from_span(span) or "Positive"
+                    _set_field_safe(out, target_field, _canon_value(target_field, pol))
+            except re.error:
+                continue
+
+    apply_simple_family(ESCULIN_PATTERNS, "Esculin Hydrolysis")
+    apply_simple_family(GELATIN_PATTERNS, "Gelatin Hydrolysis")
+    apply_simple_family(MR_PATTERNS, "Methyl Red")
+    apply_simple_family(NITRATE_PATTERNS, "Nitrate Reduction")
+
+    # -------------------------------------------------------------------------
+    # 1) Apply learned pattern lists (generic) for single-field tests.
+    #    (We deliberately SKIP decarboxylase here to avoid cross-field leakage —
+    #     we already handled it above with precise captured-group routing.)
+    # -------------------------------------------------------------------------
+    _apply_learned_patterns("oxidase", OXIDASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("catalase", CATALASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("coagulase", COAGULASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("indole", INDOLE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("urease", UREASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("citrate", CITRATE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("methyl red", MR_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("vp", VP_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("h2s", H2S_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("nitrate reduction", NITRATE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("esculin hydrolysis", ESCULIN_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("dnase", DNASE_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("gelatin hydrolysis", GELATIN_PATTERNS, t, tokens, out, alias)
+    _apply_learned_patterns("lipase test", LIPASE_PATTERNS, t, tokens, out, alias)
+    # NOTE: decarboxylase handled above; do NOT call _apply_learned_patterns for it here.
+
+    # -------------------------------------------------------------------------
+    # 2) Classic rule-based extraction (unchanged from your original logic)
+    #    Gram / Shape / Motility / Capsule / Spore / Oxygen / H2S / Nitrate
+    # -------------------------------------------------------------------------
+    # 2a) Gram
     if re.search(r"\bgram[-\s]?positive\b", t) and not re.search(r"\bgram[-\s]?negative\b", t):
         set_field("gram stain", "Positive")
     elif re.search(r"\bgram[-\s]?negative\b", t) and not re.search(r"\bgram[-\s]?positive\b", t):
         set_field("gram stain", "Negative")
 
-    # 2) Shape
+    # 2b) Shape
     if re.search(r"\bcocci\b", t):
         set_field("shape", "Cocci")
     if re.search(r"\brods?\b|bacilli\b", t):
@@ -1321,13 +1409,13 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     if re.search(r"\bshort\s+rods\b", t):
         set_field("shape", "Short Rods")
 
-    # 3) Motility (positive/negative)
+    # 2c) Motility
     if re.search(r"\bnon[-\s]?motile\b", t):
         set_field("motility", "Negative")
     elif re.search(r"\bmotile\b", t):
         set_field("motility", "Positive")
 
-    # 4) Capsule
+    # 2d) Capsule
     if re.search(r"\b(capsulated|encapsulated)\b", t):
         set_field("capsule", "Positive")
     if re.search(r"\bnon[-\s]?capsulated\b|\bcapsule\s+absent\b", t):
@@ -1335,13 +1423,13 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     if re.search(r"\bcapsule\s+(?:variable|inconsistent|weak)\b", t):
         set_field("capsule", "Variable")
 
-    # 5) Spore formation
+    # 2e) Spore formation
     if re.search(r"\bnon[-\s]?spore[-\s]?forming\b|\bno\s+spores?\b", t):
         set_field("spore formation", "Negative")
     if re.search(r"\bspore[-\s]?forming\b|\bspores?\s+present\b", t):
         set_field("spore formation", "Positive")
 
-    # 6) Oxygen requirement
+    # 2f) Oxygen requirement
     if re.search(r"\bintracellular\b", t):
         set_field("oxygen requirement", "Intracellular")
     elif re.search(r"\bcapnophil(ic|e)\b", t):
@@ -1355,10 +1443,11 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif re.search(r"\banaerobic\b", t):
         set_field("oxygen requirement", "Anaerobic")
 
-    # 7) Generic enzyme tests (beyond learned lists)
+    # 2g) Generic single-field tests (beyond learned lists)
     generic_tests = [
-        "catalase","oxidase","coagulase","urease","lipase","indole","citrate","vp",
-        "methyl red","gelatin","dnase","nitrate reduction","nitrate","h2s","esculin hydrolysis","onpg"
+        "catalase", "oxidase", "coagulase", "urease", "lipase",
+        "indole", "citrate", "vp", "methyl red", "gelatin", "dnase",
+        "nitrate reduction", "nitrate", "h2s", "esculin hydrolysis", "onpg"
     ]
     for test in generic_tests:
         # Positive
@@ -1371,19 +1460,19 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         if re.search(rf"\b{re.escape(test)}\s*(?:test)?\s*(?:variable|weak|trace|slight)\b", t):
             set_field(test, "Variable")
 
-    # 8) Special H2S phrasing
+    # 2h) H2S special phrasing
     if re.search(r"\bh\s*2\s*s\s+not\s+produced\b", t):
         set_field("h2s", "Negative")
     if re.search(r"\bproduces\s+h\s*2\s*s\b", t):
         set_field("h2s", "Positive")
 
-    # Nitrate alternate phrasing
+    # 2i) Nitrate alternate phrasing
     if re.search(r"\breduces\s+nitrate\b", t):
         set_field("nitrate reduction", "Positive")
     if re.search(r"\bdoes\s+not\s+reduce\s+nitrate\b", t):
         set_field("nitrate reduction", "Negative")
 
-    # 9) Haemolysis Type
+    # 2j) Haemolysis Type
     if re.search(r"\b(beta|β)[-\s]?haem", t):
         set_field("haemolysis type", "Beta")
     elif re.search(r"\b(alpha|α)[-\s]?haem", t):
@@ -1391,7 +1480,7 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
     elif re.search(r"\b(gamma|γ)[-\s]?haem\b", t) or re.search(r"\bno\s+haemolysis\b|\bhaemolysis\s+not\s+observed\b", t):
         set_field("haemolysis type", "Gamma")
 
-    # 10) Growth temperature (ranges and singles)
+    # 2k) Growth temperature
     range1 = re.search(r"grows\s+(\d{1,2})\s*(?:–|-|to)\s*(\d{1,2})\s*°?\s*c", t)
     range2 = re.search(r"growth\s+(?:between|from)\s+(\d{1,2})\s*(?:and|to)\s*(\d{1,2})\s*°?\s*c", t)
     if range1:
@@ -1401,11 +1490,10 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
         low, high = range2.group(1), range2.group(2)
         set_field("growth temperature", f"{low}//{high}")
     for m in re.finditer(r"(?<!no\s)grows\s+(?:well\s+)?at\s+([0-9]{1,3})\s*°?\s*c", t):
-        # If not already a range like 10//45
-        if not re.search(r"\d+//\d+", str(out.get("Growth Temperature", ""))):
+        if out.get("Growth Temperature", "").find("//") == -1:
             set_field("growth temperature", m.group(1))
 
-    # 11) NaCl tolerant
+    # 2l) NaCl tolerance
     if re.search(r"\b(tolerant|grows|growth)\s+(?:in|up\s+to|to|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t):
         set_field("nacl tolerant (>=6%)", "Positive")
     if re.search(r"\bno\s+growth\s+(?:in|at)\s+[0-9\.]+\s*%?\s*(?:na\s*cl|salt)\b", t):
