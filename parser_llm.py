@@ -1701,8 +1701,8 @@ def analyze_feedback_and_learn(
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
     Automatically patch regex pattern lists when heuristics reach threshold.
-    Includes smart handling for multi-word fields (mannitol fermentation, methyl red, etc.)
-    and adds capturing groups for fermentation, decarboxylase, gelatin, esculin, and MR patterns.
+    Includes smart handling for multi-word fields (mannitol fermentation, nitrate reduction, methyl red, etc.)
+    and adds capturing groups for fermentation, decarboxylase, gelatin, esculin, nitrate, and MR patterns.
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
@@ -1717,6 +1717,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         print(f"❌ Could not read parser file: {e}")
         return
 
+    # Map heuristic keywords to their regex list names
     pattern_lists = {
         "oxidase": "OXIDASE_PATTERNS",
         "catalase": "CATALASE_PATTERNS",
@@ -1743,7 +1744,7 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         field_lower = field.lower()
         pattern_list = None
 
-        # Identify which pattern block this field should go into
+        # Identify correct list
         for key, list_name in pattern_lists.items():
             if key in field_lower:
                 pattern_list = list_name
@@ -1751,13 +1752,11 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         if not pattern_list:
             continue
 
-        # Use our safe whitespace regex builder
         frag = _regexify_field_name_for_whitespace(field_lower)
         rule_txt = rule.get("rule", "").lower()
 
-        # Smart pattern construction
         def build_learned_pattern(fragment, polarity_rule):
-            """Generate final learned regex based on polarity"""
+            """Generate final regex based on polarity."""
             if any(k in polarity_rule for k in ["negative", "not"]):
                 return rf"\b{fragment}\b.*(?:negative|not\s+detected|not\s+produced)"
             elif "positive" in polarity_rule:
@@ -1767,19 +1766,18 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             else:
                 return rf"\b{fragment}\b.*reaction"
 
-        # Add capturing logic for specific pattern lists
+        # Add capturing groups for relevant biochemical patterns
         if pattern_list in {
             "FERMENTATION_PATTERNS",
             "DECARBOXYLASE_PATTERNS",
             "GELATIN_PATTERNS",
             "ESCULIN_PATTERNS",
             "MR_PATTERNS",
+            "NITRATE_PATTERNS",
         }:
-            # Detect the base term before the main keyword for capturing
             m_field = re.match(r"^([a-z0-9\-]+)\s+", field_lower.strip())
             if m_field:
                 base = re.escape(m_field.group(1))
-                # For example: (?P<base>rhamnose)\s+fermentation
                 if "fermentation" in field_lower:
                     frag_captured = rf"(?P<base>{base})\s+fermentation"
                 elif "decarboxylase" in field_lower:
@@ -1788,6 +1786,8 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
                     frag_captured = rf"(?P<base>{base})\s+hydrolysis"
                 elif "esculin" in field_lower:
                     frag_captured = rf"(?P<base>{base})\s+hydrolysis"
+                elif "nitrate" in field_lower:
+                    frag_captured = rf"(?P<base>{base})\s+reduction"
                 elif "methyl red" in field_lower or field_lower.strip() == "mr":
                     frag_captured = rf"(?P<base>{base})\s+red"
                 else:
@@ -1799,12 +1799,9 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         else:
             learned = build_learned_pattern(frag, rule_txt)
 
-        # Construct the new line for insertion
         insertion = f'    r"{learned}",  # auto-learned {now} ({rule["count"]}x)\n'
 
-        # Regex pattern for inserting into the right pattern block
         pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
-
         new_code, count = re.subn(
             pattern_block_regex,
             lambda m: m.group(1) + m.group(2) + insertion + m.group(3),
@@ -1831,6 +1828,18 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
             print(f"❌ Failed to write updates: {e}")
     else:
         print("ℹ️ No matching pattern lists found; no changes made.")
+
+
+def _regexify_field_name_for_whitespace(field: str) -> str:
+    """
+    Converts a field name like 'nitrate reduction' → 'nitrate\\s+reduction'.
+    Escapes words safely and joins them with \\s+ for whitespace flexibility.
+    """
+    import re
+    tokens = re.split(r"\s+", field.strip())
+    tokens = [re.escape(t) for t in tokens if t]
+    return r"\s+".join(tokens) if tokens else re.escape(field.strip())
+
 
 
 def _regexify_field_name_for_whitespace(field: str) -> str:
