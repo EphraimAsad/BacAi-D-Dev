@@ -38,6 +38,19 @@ import difflib
 from datetime import datetime
 from typing import Dict, List, Set, Tuple, Optional
 
+def _load_streamlit_secrets_into_env():
+    try:
+        import streamlit as st
+        # copy (but don't overwrite) into os.environ
+        for k, v in st.secrets.items():
+            if k not in os.environ:
+                os.environ[k] = str(v)
+    except Exception:
+        # not running in Streamlit, ignore
+        pass
+
+_load_streamlit_secrets_into_env()
+
 # Optional fallback parser import (kept harmless if missing)
 fallback_parser = None
 try:
