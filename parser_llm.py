@@ -1138,21 +1138,60 @@ def _apply_learned_patterns(
 # Fermentation extraction (+ shorthands + negatives and "but not" lists)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def extract_fermentations_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
-    out: Dict[str, str] = {}
-    t = normalize_text(text)
-    fields = normalize_columns(db_fields)
-    alias = build_alias_map(db_fields)
+def extract_fermentations_regex(text, db_fields=None):
+    """
+    Extracts fermentation-related results using regex patterns.
+    Now supports captured groups (e.g. (?P<base>glucose)) and uncaptured matches.
+    """
+    db_fields = db_fields or []
+    t = text.lower()
+    results = {}
 
-    ferm_fields = [f for f in fields if f.lower().endswith(" fermentation")]
-    base_to_field = {f[:-12].strip().lower(): f for f in ferm_fields}
+    def set_field_by_base(base_name, value):
+        """Sets normalized fermentation field if it exists in db_fields."""
+        for f in db_fields:
+            if base_name.lower() in f.lower() and "fermentation" in f.lower():
+                results[f] = value
+                break
 
-    def set_field_by_base(base: str, val: str) -> None:
-        b = _normalize_token(base)
-        if b in base_to_field:
-            _set_field_safe(out, base_to_field[b], _canon_value(base_to_field[b], val))
-        elif b in alias and alias[b] in fields:
-            _set_field_safe(out, alias[b], _canon_value(alias[b], val))
+    for pat in FERMENTATION_PATTERNS:
+        for m in re.finditer(pat, t, flags=re.I | re.S):
+            matched_text = m.group(0)
+
+            # Determine polarity
+            if re.search(r"\b(negative|not\s+detected|not\s+produced)\b", matched_text, re.I):
+                val = "Negative"
+            elif re.search(r"\b(variable|weak|trace|slight)\b", matched_text, re.I):
+                val = "Variable"
+            else:
+                val = "Positive"
+
+            # Handle captured groups (base sugars)
+            if m.lastgroup == "base":
+                base = m.group("base")
+                if base:
+                    set_field_by_base(base, val)
+                    continue
+
+            # Handle classic multi-sugar lists in capture groups
+            if m.lastindex:
+                for i in range(1, m.lastindex + 1):
+                    grp = m.group(i)
+                    if grp:
+                        for base in re.split(r"[;,/and]+", grp):
+                            base = base.strip()
+                            if base:
+                                set_field_by_base(base, val)
+                continue
+
+            # If no groups, infer sugar from match itself
+            m_base = re.search(r"\b([a-z0-9\-]+)\s+fermentation\b", matched_text, flags=re.I)
+            if m_base:
+                base = m_base.group(1)
+                set_field_by_base(base, val)
+
+    return results
+
 
         # 1) Learned + generic patterns (from FERMENTATION_PATTERNS)
     #    Now supports both patterns WITH capture groups and WITHOUT them.
