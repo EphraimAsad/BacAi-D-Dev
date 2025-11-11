@@ -1826,13 +1826,13 @@ def analyze_feedback_and_learn(
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Helpers for learning/patching (full-learning edition)
+# Helpers for learning/patching (full-learning + non-polarity support)
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _escape_field_to_regex(field_name: str) -> str:
     """
-    Convert a schema field (e.g., 'Lactose Fermentation', 'Methyl Red', 'H2S')
-    into a safe regex token with word boundaries and flexible spacing.
+    Convert a schema field into a safe regex token with word boundaries
+    and flexible spacing.
     Example: 'Lactose Fermentation' -> r"\blactose\s+fermentation\b"
     """
     s = (field_name or "").strip().lower()
@@ -1868,9 +1868,7 @@ def _normalize_regex_for_dedup(pat: str) -> str:
 
 
 def _block_contains_pattern_semantically(block_text: str, new_raw_pattern: str) -> bool:
-    """
-    Check if a semantically equivalent pattern already exists in the list block.
-    """
+    """Check if a semantically equivalent pattern already exists in the list block."""
     target = _normalize_regex_for_dedup(new_raw_pattern)
     found = []
     for m in re.finditer(r"""(?P<prefix>r)?(?P<q>["'])(?P<body>.*?)(?P=q)""", block_text, flags=re.S):
@@ -1882,9 +1880,7 @@ def _block_contains_pattern_semantically(block_text: str, new_raw_pattern: str) 
 
 
 def _infer_polarity_from_text(s: str) -> str:
-    """
-    Infer polarity from heuristic text. negative > variable > positive.
-    """
+    """Infer polarity from heuristic text. negative > variable > positive."""
     if not s:
         return ""
     txt = s.lower()
@@ -1900,30 +1896,49 @@ def _infer_polarity_from_text(s: str) -> str:
     return ""
 
 
+# Non-polarity fields (we just want an anchor rule, no +/- tail)
+_NON_POLARITY_FIELDS = {
+    "media grown on",
+    "colony morphology",
+    "growth temperature",
+}
+
 def _synthesize_rule_regex(field_name: str, polarity: str) -> str:
     """
     Build a robust regex for a learned rule:
     - Anchors to the field (with \s+ between tokens)
-    - Appends a polarity-tail for positive/negative/variable
+    - For polarity fields: append a polarity-tail
+    - For non-polarity fields: generic tail .*
     """
     field_rx = _escape_field_to_regex(field_name)
-    if polarity == "negative":
-        tail = r".*(?:\-|negative|not\s+detected|not\s+produced|absent|no\s+\w+)"
-    elif polarity == "variable":
-        tail = r".*(?:variable|weak|trace|slight|inconsistent)"
+    if field_name.strip().lower() in _NON_POLARITY_FIELDS:
+        tail = r".*"
     else:
-        tail = r".*(?:\+|positive|detected|produced|present)"
+        if polarity == "negative":
+            tail = r".*(?:\-|negative|not\s+detected|not\s+produced|absent|no\s+\w+)"
+        elif polarity == "variable":
+            tail = r".*(?:variable|weak|trace|slight|inconsistent)"
+        else:
+            tail = r".*(?:\+|positive|detected|produced|present)"
     return f'r"{field_rx}{tail}"'
 
 
 def _pick_pattern_list_for_field(field_lower: str) -> str:
     """
     Map a (lowercased) field name to its pattern list constant name.
-    Covers ALL polarity tests + fermentations.
+    Covers ALL polarity tests + fermentations + non-polarity specials.
     Creates blocks later if they don't exist.
     """
     # Normalize common typo
     field_lower = field_lower.replace("ornitihine", "ornithine")
+
+    # Non-polarity fields
+    if "media grown on" in field_lower:
+        return "MEDIA_GROWN_ON_PATTERNS"
+    if "colony morphology" in field_lower:
+        return "COLONY_MORPHOLOGY_PATTERNS"
+    if "growth temperature" in field_lower:
+        return "GROWTH_TEMPERATURE_PATTERNS"
 
     # Fermentations (any field ending with / containing 'fermentation')
     if "fermentation" in field_lower or field_lower.endswith(" fermentation"):
@@ -1950,8 +1965,7 @@ def _pick_pattern_list_for_field(field_lower: str) -> str:
         "lysine decarboxylase": "DECARBOXYLASE_PATTERNS",
         "ornithine decarboxylase": "DECARBOXYLASE_PATTERNS",
         "arginine dihydrolase": "DECARBOXYLASE_PATTERNS",
-
-        # Newly elevated to full-learning:
+        # Baseline-only before — now fully learnable:
         "onpg": "ONPG_PATTERNS",
         "nacl tolerant": "NACL_TOLERANT_PATTERNS",
         "na cl tolerant": "NACL_TOLERANT_PATTERNS",
@@ -1959,7 +1973,7 @@ def _pick_pattern_list_for_field(field_lower: str) -> str:
         "capsule": "CAPSULE_PATTERNS",
         "spore formation": "SPORE_FORMATION_PATTERNS",
         "haemolysis": "HAEMOLYSIS_PATTERNS",
-        "hemolysis": "HAEMOLYSIS_PATTERNS",  # US spelling routed to same list
+        "hemolysis": "HAEMOLYSIS_PATTERNS",
     }
     for key, plist in mapping.items():
         if key in field_lower:
@@ -1993,18 +2007,22 @@ def _ensure_pattern_list_exists(code: str, list_name: str, anchor_list_name: str
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Full-learning auto-updater (safe + dedup + smart spacing + block creation)
+# Full-learning auto-updater (polarity + non-polarity + dedup + creation)
 # ──────────────────────────────────────────────────────────────────────────────
 
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
-    Fully-learned updater for ALL polarity tests + fermentations:
+    Fully-learned updater for:
+      • ALL polarity tests
+      • ALL sugar fermentations
+      • Non-polarity fields: Media Grown On, Colony Morphology, Growth Temperature
+    Behavior:
       • Reads auto_heuristics from memory
-      • Infers polarity from feedback text
+      • Infers polarity (for polarity fields)
       • Builds safe regex with \s+ spacing
       • Adds to the appropriate *_PATTERNS list (creating it if needed)
       • Performs semantic deduplication
-      • Leaves file untouched if no real changes are needed
+      • Leaves file untouched if nothing new
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
@@ -2030,10 +2048,10 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
 
         pattern_list = _pick_pattern_list_for_field(field_lower)
         if not pattern_list:
-            # Not a learnable polarity/fermentation field
+            # Not a learnable field
             continue
 
-        # Polarity from heuristic text (fallback positive)
+        # Polarity from heuristic text (only matters for polarity fields)
         raw_rule_text = str(meta.get("rule", "")) if isinstance(meta, dict) else str(meta)
         polarity = _infer_polarity_from_text(raw_rule_text) or "positive"
 
@@ -2061,7 +2079,11 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         new_block_body = block_body + insertion
         code = code[:m.start(2)] + new_block_body + code[m.end(2):]
         updated += 1
-        print(f"✅ Learned pattern added for '{field_str}' → {pattern_list} ({polarity})")
+        # Show polarity only for polarity fields
+        if field_lower in _NON_POLARITY_FIELDS:
+            print(f"✅ Learned anchor added for '{field_str}' → {pattern_list}")
+        else:
+            print(f"✅ Learned pattern added for '{field_str}' → {pattern_list} ({polarity})")
 
     if updated > 0:
         # Append a summary and write the file
