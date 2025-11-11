@@ -1,5 +1,5 @@
 # app.py — BactAI-D Main Interface (Aligned with self-learning parsers)
-# ---------------------------------------------------------
+# ---------------------------------------------------------------------
 import streamlit as st
 import pandas as pd
 import re
@@ -9,24 +9,52 @@ import subprocess
 from fpdf import FPDF
 from datetime import datetime
 
+# Core imports
 from engine import BacteriaIdentifier
-from parser_llm import parse_input_free_text
-from parser_llm import enable_self_learning_autopatch  # unified LLM learner
-from parser_basic import enable_self_learning_autopatch as enable_regex_autopatch  # regex fallback learner
-from parser_llm import enable_self_learning_autopatch, parse_input_free_text as parse_llm_input_free_text
-enable_self_learning_autopatch(run_tests=False)  # safe: runs learning, patches, sanitizes
+from parser_llm import parse_input_free_text as parse_llm_input_free_text, enable_self_learning_autopatch
+from parser_basic import enable_self_learning_autopatch as enable_regex_autopatch
 
-# --- CONFIG ---
+# ──────────────────────────────────────────────────────────────────────────────
+# GIT INITIALIZATION (Streamlit Cloud Fix)
+# ──────────────────────────────────────────────────────────────────────────────
+def ensure_git_repo():
+    """Initializes a git repo on Streamlit Cloud if none exists."""
+    gh_token = os.getenv("GH_TOKEN")
+    gh_repo = os.getenv("GITHUB_REPO")
+    branch = os.getenv("GIT_BRANCH", "main")
+
+    if not gh_token or not gh_repo:
+        print("⚠️ Missing GH_TOKEN or GITHUB_REPO; skipping repo init.")
+        return
+
+    if not os.path.exists(".git"):
+        print("🧩 Initializing git repo for Streamlit Cloud...")
+        subprocess.run(["git", "init"], check=False)
+        subprocess.run(
+            ["git", "remote", "add", "origin", f"https://{gh_token}@github.com/{gh_repo}.git"],
+            check=False,
+        )
+        subprocess.run(["git", "fetch", "origin", branch], check=False)
+        subprocess.run(["git", "checkout", "-B", branch], check=False)
+        print("✅ Git repo initialized and connected to remote.")
+
+ensure_git_repo()
+enable_self_learning_autopatch(run_tests=False)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="BactAI-D Assistant", layout="wide")
 
-# --- LOAD DATA ---
+# ──────────────────────────────────────────────────────────────────────────────
+# LOAD DATA
+# ──────────────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data(path, last_modified):
     df = pd.read_excel(path)
     df.columns = [c.strip() for c in df.columns]
     return df
 
-# Resolve DB path
 primary_path = os.path.join("data", "bacteria_db.xlsx")
 fallback_path = os.path.join("bacteria_db.xlsx")
 data_path = primary_path if os.path.exists(primary_path) else fallback_path
@@ -40,14 +68,17 @@ except FileNotFoundError:
 db = load_data(data_path, last_modified)
 eng = BacteriaIdentifier(db)
 
-# Optional timestamp
 st.sidebar.caption(f"📅 Database last updated: {datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')}")
 
-# --- PAGE HEADER ---
+# ──────────────────────────────────────────────────────────────────────────────
+# PAGE HEADER
+# ──────────────────────────────────────────────────────────────────────────────
 st.title("🧫 BactAI-D: Intelligent Bacteria Identification Assistant")
 st.markdown("Use the sidebar to input your biochemical and morphological results.")
 
-# --- FIELD GROUPS ---
+# ──────────────────────────────────────────────────────────────────────────────
+# FIELD GROUPS
+# ──────────────────────────────────────────────────────────────────────────────
 MORPH_FIELDS = ["Gram Stain", "Shape", "Colony Morphology", "Media Grown On", "Motility", "Capsule", "Spore Formation"]
 ENZYME_FIELDS = ["Catalase", "Oxidase", "Coagulase", "Lipase Test"]
 SUGAR_FIELDS = [
@@ -56,7 +87,9 @@ SUGAR_FIELDS = [
     "Arabinose Fermentation", "Raffinose Fermentation", "Trehalose Fermentation", "Inositol Fermentation"
 ]
 
-# --- SESSION STATE ---
+# ──────────────────────────────────────────────────────────────────────────────
+# SESSION STATE
+# ──────────────────────────────────────────────────────────────────────────────
 if "user_input" not in st.session_state:
     st.session_state.user_input = {}
 if "results" not in st.session_state:
@@ -66,7 +99,9 @@ if "gold_results" not in st.session_state:
 if "gold_summary" not in st.session_state:
     st.session_state.gold_summary = None
 
-# --- RESET TRIGGER HANDLER ---
+# ──────────────────────────────────────────────────────────────────────────────
+# RESET TRIGGER
+# ──────────────────────────────────────────────────────────────────────────────
 if "reset_trigger" in st.session_state and st.session_state["reset_trigger"]:
     for key in list(st.session_state.user_input.keys()):
         st.session_state.user_input[key] = "Unknown"
@@ -79,7 +114,9 @@ if "reset_trigger" in st.session_state and st.session_state["reset_trigger"]:
     st.session_state["reset_trigger"] = False
     st.rerun()
 
-# --- SIDEBAR HEADER ---
+# ──────────────────────────────────────────────────────────────────────────────
+# SIDEBAR INPUT SECTIONS
+# ──────────────────────────────────────────────────────────────────────────────
 st.sidebar.markdown(
     """
     <div style='background-color:#1565C0; padding:12px; border-radius:10px;'>
@@ -89,7 +126,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# --- FIELD POPULATION ---
 def get_unique_values(field):
     vals = []
     for v in eng.db[field]:
@@ -101,7 +137,6 @@ def get_unique_values(field):
     vals.sort()
     return vals
 
-# --- SIDEBAR INPUTS ---
 with st.sidebar.expander("🧫 Morphological Tests", expanded=True):
     for field in MORPH_FIELDS:
         if field in ["Shape", "Colony Morphology", "Media Grown On"]:
@@ -135,19 +170,17 @@ with st.sidebar.expander("🧬 Other Tests", expanded=False):
         else:
             st.session_state.user_input[field] = st.selectbox(field, ["Unknown", "Positive", "Negative", "Variable"], index=0, key=field)
 
-# --- RESET BUTTON ---
 if st.sidebar.button("🔄 Reset All Inputs"):
     st.session_state["reset_trigger"] = True
     st.rerun()
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 🧠 GOLD SPEC TESTS SECTION (Now Self-Learning)
+# GOLD SPEC TESTS (SELF-LEARNING)
 # ──────────────────────────────────────────────────────────────────────────────
 with st.sidebar.expander("🧪 Gold Spec Tests", expanded=False):
     if st.button("▶️ Run Gold Spec Tests & Self-Learn"):
         with st.spinner("Running Gold Spec Tests and analyzing feedback..."):
             try:
-                # Run learning process on both parsers (LLM + regex)
                 enable_self_learning_autopatch(run_tests=True, db_fields=[c for c in db.columns if c.lower() != "genus"])
                 enable_regex_autopatch(run_tests=True, db_fields=[c for c in db.columns if c.lower() != "genus"])
                 st.success("✅ Gold Spec Tests completed and learning applied.")
@@ -160,7 +193,9 @@ with st.sidebar.expander("🧪 Gold Spec Tests", expanded=False):
                 os.remove(f)
         st.success("Cleared parser learning memory.")
 
-# --- IDENTIFY BUTTON ---
+# ──────────────────────────────────────────────────────────────────────────────
+# IDENTIFICATION
+# ──────────────────────────────────────────────────────────────────────────────
 if st.sidebar.button("🔍 Identify"):
     with st.spinner("Analyzing results..."):
         results = eng.identify(st.session_state.user_input)
@@ -183,9 +218,8 @@ if st.sidebar.button("🔍 Identify"):
             )
             st.session_state.results = results
 
-# --- DISPLAY RESULTS ---
 if not st.session_state.results.empty:
-    st.info("Percentages based upon entered tests. True confidence reflects all fields.")
+    st.info("Percentages based on entered tests. True confidence reflects all fields.")
     for _, row in st.session_state.results.iterrows():
         confidence_value = int(row["Confidence"].replace("%", ""))
         confidence_color = "🟢" if confidence_value >= 75 else "🟡" if confidence_value >= 50 else "🔴"
@@ -197,7 +231,9 @@ if not st.session_state.results.empty:
             if row["Extra Notes"]:
                 st.markdown(f"**Notes:** {row['Extra Notes']}")
 
-# --- PDF EXPORT ---
+# ──────────────────────────────────────────────────────────────────────────────
+# PDF EXPORT
+# ──────────────────────────────────────────────────────────────────────────────
 def export_pdf(results_df, user_input):
     pdf = FPDF()
     pdf.add_page()
@@ -230,32 +266,52 @@ if not st.session_state.results.empty:
         with open(pdf_path, "rb") as f:
             st.download_button("⬇️ Download PDF", f, file_name="BactAI-d_Report.pdf")
 
-# --- FOOTER ---
+# ──────────────────────────────────────────────────────────────────────────────
+# FOOTER
+# ──────────────────────────────────────────────────────────────────────────────
 st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain</b> | www.linkedin.com/in/zain-asad-1998EPH</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>", unsafe_allow_html=True)
 
-# --- AUTO-GIT COMMIT ---
+# ──────────────────────────────────────────────────────────────────────────────
+# AUTO-GIT COMMIT (Streamlit Cloud Safe)
+# ──────────────────────────────────────────────────────────────────────────────
 def auto_git_commit():
-    token = os.getenv("GITHUB_TOKEN")
-    repo = os.getenv("GITHUB_REPO")
-    if not token or not repo:
-        print("⚠️ GitHub credentials missing.")
+    """Pushes learned updates safely back to GitHub."""
+    gh_token = os.getenv("GH_TOKEN")
+    gh_repo = os.getenv("GITHUB_REPO")
+    branch = os.getenv("GIT_BRANCH", "main")
+    email = os.getenv("GIT_USER_EMAIL", "bot@bactaid.local")
+    name = os.getenv("GIT_USER_NAME", "BactAI-D AutoLearner")
+
+    if not gh_token or not gh_repo:
+        print("⚠️ GitHub credentials not found; skipping auto-commit.")
         return
+
     try:
-        subprocess.run(["git", "config", "--global", "user.name", os.getenv("GITHUB_NAME", "AutoLearner")], check=True)
-        subprocess.run(["git", "config", "--global", "user.email", os.getenv("GITHUB_EMAIL", "bot@bactaid.local")], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", email], check=False)
+        subprocess.run(["git", "config", "--global", "user.name", name], check=False)
+        subprocess.run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()], check=False)
+
+        remote_url = f"https://{gh_token}@github.com/{gh_repo}.git"
+        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=False)
+
         result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
         if not result.stdout.strip():
-            print("ℹ️ No changes to commit.")
+            print("ℹ️ No local changes to commit — skipping Git push.")
             return
-        subprocess.run(["git", "add", "parser_llm.py", "parser_basic.py", "parser_memory.json", "parser_feedback.json"], check=False)
-        msg = f"🤖 Auto-learn update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        subprocess.run(["git", "commit", "-m", msg], check=False)
-        subprocess.run(["git", "push", f"https://{token}@{repo}.git", "HEAD:main"], check=True)
-        print("✅ Auto-commit completed.")
+
+        subprocess.run([
+            "git", "add",
+            "parser_llm.py", "parser_basic.py",
+            "parser_memory.json", "parser_feedback.json"
+        ], check=False)
+
+        commit_msg = f"🤖 Auto-learn update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
+        subprocess.run(["git", "push", "origin", f"HEAD:{branch}"], check=False)
+        print("✅ Auto-commit and push completed.")
     except Exception as e:
         print(f"⚠️ Auto-commit failed: {e}")
 
 auto_git_commit()
 st.sidebar.success("✅ Learning cycle complete & synced with GitHub.")
-
