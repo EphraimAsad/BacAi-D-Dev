@@ -110,8 +110,8 @@ def _sanitize_auto_learned_patterns(file_path: str) -> None:
 
         # Keep raw-strings intact; just normalize accidental half-escapes.
         # Intentionally simple: we don't attempt deep AST edits here.
-        # Normalize r"\ " (backslash-space) → "\s+" intent is handled elsewhere.
-        content = content.replace(r'\ ', r'\\s+')
+        # Normalize r"\\s+" (backslash-space) → "\s+" intent is handled elsewhere.
+        content = content.replace(r'\\s+', r'\\s+')
 
         # Remove accidental CR nulls or stray NULs if they appeared
         content = content.replace("\x00", "")
@@ -1042,7 +1042,7 @@ def apply_what_if(user_text: str, prior_result: Dict[str, str], db_fields: List[
         r"what\s+if\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes|turned|changed\s+to)\s+([a-z\+\-]+)",
         r"suppose\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes)\s+([a-z\+\-]+)",
         r"if\s+it\s+(?:is|was|were)\s+([a-z\s]+?)\s*(?:instead)?\s*(?:of|to)?\s*([a-z\+\-]+)?",
-        r"change\s+([a-z\s]+?)\s+to\s+([a-z\+\-]+)"
+        r"change\s+([a-z\s]+?)\s+to\s+([a-z\+\-]+)",
     ]
     for pat in patterns:
         m = re.search(pat, txt)
@@ -1165,10 +1165,10 @@ def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_P
 def _escape_for_raw_regex(text: str) -> str:
     """
     Convert a human-ish term (possibly with spaces) into a safe raw-regex token.
-    - Collapse any literal backslash+space ('\ ') into '\\s+'
+    - Collapse any literal backslash+space ('\\s+') into '\\s+'
     - Replace literal spaces with '\\s+'
     """
-    text = text.replace(r"\ ", r"\\s+")
+    text = text.replace(r"\\s+", r"\\s+")
     text = re.sub(r"\s+", r"\\s+", text.strip())
     return text
 
