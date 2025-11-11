@@ -1,31 +1,59 @@
 # app_chat.py — LLM-first chat (Ollama Cloud) with Basic regex fallback
-# - Removes ChatGPT/Cloud usage entirely
-# - Displays Active Parser (LLM via Ollama or Basic regex) as read-only info
-# - Gold Spec Tests run from gold_tests.json and trigger self-learning + auto-regex patch
-# - Uses dynamic schema based on current Excel DB columns
+# - Git auto-commit enabled (runtime .git init for Streamlit Cloud)
+# - Gold Spec Tests trigger self-learning + regex patch
+# - Fully compatible with updated parser_llm.py (DeepSeek v3.1:671b)
 
 import os
 import re
 import json
 from datetime import datetime
-
+import subprocess
 import pandas as pd
 import streamlit as st
 
+# ──────────────────────────────────────────────────────────────────────────────
+# EARLY GIT INIT — required for Streamlit Cloud to push back to GitHub
+# ──────────────────────────────────────────────────────────────────────────────
+def ensure_git_repo():
+    """Initializes a git repo in the current directory if none exists."""
+    gh_token = os.getenv("GH_TOKEN")
+    gh_repo = os.getenv("GITHUB_REPO")
+    branch = os.getenv("GIT_BRANCH", "main")
+
+    if not gh_token or not gh_repo:
+        print("⚠️ Missing GH_TOKEN or GITHUB_REPO; skipping repo init.")
+        return
+
+    if not os.path.exists(".git"):
+        print("🧩 Initializing git repo for Streamlit Cloud...")
+        subprocess.run(["git", "init"], check=False)
+        subprocess.run(
+            ["git", "remote", "add", "origin",
+             f"https://{gh_token}@github.com/{gh_repo}.git"],
+            check=False,
+        )
+        subprocess.run(["git", "fetch", "origin", branch], check=False)
+        subprocess.run(["git", "checkout", "-B", branch], check=False)
+        print("✅ Git repo initialized and connected to remote.")
+
+ensure_git_repo()
+
+# ──────────────────────────────────────────────────────────────────────────────
+# IMPORTS
+# ──────────────────────────────────────────────────────────────────────────────
 from engine import BacteriaIdentifier
-# LLM-first parser (uses Ollama Cloud inside)
+# LLM-first parser (Ollama Cloud)
 from parser_llm import parse_input_free_text as parse_llm_input_free_text
 # Deterministic fallback parser
 from parser_basic import parse_input_free_text as parse_basic_input_free_text
-from parser_llm import enable_self_learning_autopatch, parse_input_free_text as parse_llm_input_free_text
-enable_self_learning_autopatch(run_tests=False)  # safe: runs learning, patches, sanitizes
+# Self-learning and autopatch
+from parser_llm import enable_self_learning_autopatch
+enable_self_learning_autopatch(run_tests=False)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CONFIG
 # ──────────────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="BactAI-D — Language Reasoning (Chat)", layout="wide")
-
-# Default model name for Ollama Cloud (read from env, keep same default you used before)
 DEFAULT_LOCAL_MODEL = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -37,7 +65,6 @@ def load_data(path, last_modified):
     df.columns = [c.strip() for c in df.columns]
     return df
 
-# Resolve data path (prefer ./data/bacteria_db.xlsx, fallback ./bacteria_db.xlsx)
 primary_path = os.path.join("data", "bacteria_db.xlsx")
 fallback_path = os.path.join("bacteria_db.xlsx")
 data_path = primary_path if os.path.exists(primary_path) else fallback_path
@@ -45,7 +72,7 @@ data_path = primary_path if os.path.exists(primary_path) else fallback_path
 try:
     last_modified = os.path.getmtime(data_path)
 except FileNotFoundError:
-    st.error(f"Database file not found at '{primary_path}' or '{fallback_path}'.")
+    st.error(f"Database not found at '{primary_path}' or '{fallback_path}'.")
     st.stop()
 
 db = load_data(data_path, last_modified)
@@ -57,19 +84,17 @@ db_fields = [c for c in db.columns if c.strip().lower() != "genus"]
 # ──────────────────────────────────────────────────────────────────────────────
 st.title("🧫 BactAI-D — Language Reasoning (Chat)")
 st.caption(f"📅 Database last updated: {datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')}")
-st.markdown(
-    "Describe your findings in plain English (e.g., "
-    "_'Gram negative rod, oxidase positive, motile, non-lactose fermenter on MacConkey.'_). "
-    "I’ll parse it, run the BactAI-D engine, and explain the result."
-)
-st.markdown(
-    """
+st.markdown("""
+Describe your findings in plain English (e.g.,
+_'Gram negative rod, oxidase positive, motile, non-lactose fermenter on MacConkey.'_
+). I’ll parse it, run the BactAI-D engine, and explain the result.
+""")
+st.markdown("""
 **How to read the scores**
 
-- **Confidence** – Based **only on the tests you entered**.  
+- **Confidence** – Based **only on the tests you entered**.
 - **True Confidence (All Tests)** – The same score scaled by **all possible fields in the database**.
-"""
-)
+""")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SESSION STATE
@@ -85,25 +110,23 @@ if "gold_results" not in st.session_state:
 if "gold_summary" not in st.session_state:
     st.session_state.gold_summary = None
 if "active_parser" not in st.session_state:
-    # Display-only: "LLM (Ollama: <model>)" or "Basic (regex)"
     st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# SIDEBAR — Active Parser (display-only) & tools
+# SIDEBAR
 # ──────────────────────────────────────────────────────────────────────────────
 st.sidebar.markdown("### ⚙️ Runtime")
-# Read-only, shows which backend the *last* parse used (updated per message)
 st.sidebar.text_input(
     "Active Parser",
     value=st.session_state.active_parser,
     disabled=True,
-    help="The parser currently used by the app. If LLM is unavailable, it falls back to Basic (regex)."
+    help="The parser currently used by the app."
 )
 
-with st.sidebar.expander("🧬 Supported Tests (current database fields)", expanded=False):
+with st.sidebar.expander("🧬 Supported Tests (database fields)", expanded=False):
     st.write(", ".join(sorted(db_fields)))
 
-with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True):
+with st.sidebar.expander("🧪 Parsed Fields (from chat)", expanded=True):
     if st.session_state.facts:
         st.json(st.session_state.facts)
     else:
@@ -111,14 +134,150 @@ with st.sidebar.expander("🧪 Parsed Fields (from conversation)", expanded=True
 
 st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Reset conversation"):
-    st.session_state.facts = {}
-    st.session_state.history = []
-    st.session_state.last_results = None
-    st.session_state.gold_results = None
-    st.session_state.gold_summary = None
+    for key in ["facts", "history", "last_results", "gold_results", "gold_summary"]:
+        st.session_state[key] = {} if key == "facts" else None
     st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
     st.rerun()
+# app_chat.py — LLM-first chat (Ollama Cloud) with Basic regex fallback
+# - Git auto-commit enabled (runtime .git init for Streamlit Cloud)
+# - Gold Spec Tests trigger self-learning + regex patch
+# - Fully compatible with updated parser_llm.py (DeepSeek v3.1:671b)
 
+import os
+import re
+import json
+from datetime import datetime
+import subprocess
+import pandas as pd
+import streamlit as st
+
+# ──────────────────────────────────────────────────────────────────────────────
+# EARLY GIT INIT — required for Streamlit Cloud to push back to GitHub
+# ──────────────────────────────────────────────────────────────────────────────
+def ensure_git_repo():
+    """Initializes a git repo in the current directory if none exists."""
+    gh_token = os.getenv("GH_TOKEN")
+    gh_repo = os.getenv("GITHUB_REPO")
+    branch = os.getenv("GIT_BRANCH", "main")
+
+    if not gh_token or not gh_repo:
+        print("⚠️ Missing GH_TOKEN or GITHUB_REPO; skipping repo init.")
+        return
+
+    if not os.path.exists(".git"):
+        print("🧩 Initializing git repo for Streamlit Cloud...")
+        subprocess.run(["git", "init"], check=False)
+        subprocess.run(
+            ["git", "remote", "add", "origin",
+             f"https://{gh_token}@github.com/{gh_repo}.git"],
+            check=False,
+        )
+        subprocess.run(["git", "fetch", "origin", branch], check=False)
+        subprocess.run(["git", "checkout", "-B", branch], check=False)
+        print("✅ Git repo initialized and connected to remote.")
+
+ensure_git_repo()
+
+# ──────────────────────────────────────────────────────────────────────────────
+# IMPORTS
+# ──────────────────────────────────────────────────────────────────────────────
+from engine import BacteriaIdentifier
+# LLM-first parser (Ollama Cloud)
+from parser_llm import parse_input_free_text as parse_llm_input_free_text
+# Deterministic fallback parser
+from parser_basic import parse_input_free_text as parse_basic_input_free_text
+# Self-learning and autopatch
+from parser_llm import enable_self_learning_autopatch
+enable_self_learning_autopatch(run_tests=False)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CONFIG
+# ──────────────────────────────────────────────────────────────────────────────
+st.set_page_config(page_title="BactAI-D — Language Reasoning (Chat)", layout="wide")
+DEFAULT_LOCAL_MODEL = os.getenv("LOCAL_MODEL", "deepseek-v3.1:671b")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DATA LOADING
+# ──────────────────────────────────────────────────────────────────────────────
+@st.cache_data
+def load_data(path, last_modified):
+    df = pd.read_excel(path)
+    df.columns = [c.strip() for c in df.columns]
+    return df
+
+primary_path = os.path.join("data", "bacteria_db.xlsx")
+fallback_path = os.path.join("bacteria_db.xlsx")
+data_path = primary_path if os.path.exists(primary_path) else fallback_path
+
+try:
+    last_modified = os.path.getmtime(data_path)
+except FileNotFoundError:
+    st.error(f"Database not found at '{primary_path}' or '{fallback_path}'.")
+    st.stop()
+
+db = load_data(data_path, last_modified)
+eng = BacteriaIdentifier(db)
+db_fields = [c for c in db.columns if c.strip().lower() != "genus"]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# HEADER
+# ──────────────────────────────────────────────────────────────────────────────
+st.title("🧫 BactAI-D — Language Reasoning (Chat)")
+st.caption(f"📅 Database last updated: {datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')}")
+st.markdown("""
+Describe your findings in plain English (e.g.,
+_'Gram negative rod, oxidase positive, motile, non-lactose fermenter on MacConkey.'_
+). I’ll parse it, run the BactAI-D engine, and explain the result.
+""")
+st.markdown("""
+**How to read the scores**
+
+- **Confidence** – Based **only on the tests you entered**.
+- **True Confidence (All Tests)** – The same score scaled by **all possible fields in the database**.
+""")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SESSION STATE
+# ──────────────────────────────────────────────────────────────────────────────
+if "facts" not in st.session_state:
+    st.session_state.facts = {}
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "last_results" not in st.session_state:
+    st.session_state.last_results = None
+if "gold_results" not in st.session_state:
+    st.session_state.gold_results = None
+if "gold_summary" not in st.session_state:
+    st.session_state.gold_summary = None
+if "active_parser" not in st.session_state:
+    st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SIDEBAR
+# ──────────────────────────────────────────────────────────────────────────────
+st.sidebar.markdown("### ⚙️ Runtime")
+st.sidebar.text_input(
+    "Active Parser",
+    value=st.session_state.active_parser,
+    disabled=True,
+    help="The parser currently used by the app."
+)
+
+with st.sidebar.expander("🧬 Supported Tests (database fields)", expanded=False):
+    st.write(", ".join(sorted(db_fields)))
+
+with st.sidebar.expander("🧪 Parsed Fields (from chat)", expanded=True):
+    if st.session_state.facts:
+        st.json(st.session_state.facts)
+    else:
+        st.caption("No parsed fields yet. Send a message to begin.")
+
+st.sidebar.markdown("---")
+if st.sidebar.button("🔄 Reset conversation"):
+    for key in ["facts", "history", "last_results", "gold_results", "gold_summary"]:
+        st.session_state[key] = {} if key == "facts" else None
+    st.session_state.active_parser = f"LLM (Ollama: {DEFAULT_LOCAL_MODEL})"
+    st.rerun()
 # ──────────────────────────────────────────────────────────────────────────────
 # GOLD SPEC TESTS — runs from gold_tests.json and triggers self-learning
 # ──────────────────────────────────────────────────────────────────────────────
@@ -300,59 +459,3 @@ if user_msg:
     st.session_state.last_results = results
     st.session_state.history.append({"role": "assistant", "content": reply})
     st.chat_message("assistant").markdown(reply)
-
-# ──────────────────────────────────────────────────────────────────────────────
-# FOOTER
-# ──────────────────────────────────────────────────────────────────────────────
-st.markdown("<hr>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:center; font-size:14px;'>Created by <b>Zain (Eph)</b></div>", unsafe_allow_html=True)
-
-# ────────────────────────────────────────────────────────────────
-# 🔁 AUTO-GIT COMMIT (Streamlit Cloud safe version)
-# ────────────────────────────────────────────────────────────────
-import subprocess
-
-def auto_git_commit():
-    """Safely commits parser updates to GitHub if changes occurred."""
-    token = os.getenv("GITHUB_TOKEN")
-    repo = os.getenv("GITHUB_REPO")
-    email = os.getenv("GITHUB_EMAIL", "bot@bactaid.local")
-    name = os.getenv("GITHUB_NAME", "BactAI-D AutoLearner")
-
-    if not token or not repo:
-        print("⚠️ GitHub credentials not found; skipping auto-commit.")
-        return
-
-    try:
-        # Configure git identity
-        subprocess.run(["git", "config", "--global", "user.email", email], check=True)
-        subprocess.run(["git", "config", "--global", "user.name", name], check=True)
-
-        # Check for modifications first
-        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if not result.stdout.strip():
-            print("ℹ️ No local changes to commit — skipping Git push.")
-            return
-
-        # Stage modified learning-related files only
-        subprocess.run([
-            "git", "add",
-            "parser_llm.py", "parser_basic.py",
-            "parser_memory.json", "parser_feedback.json"
-        ], check=False)
-
-        # Commit with timestamp
-        commit_msg = f"🤖 Auto-learned regex update — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        subprocess.run(["git", "commit", "-m", commit_msg], check=False)
-
-        # Push using the token
-        remote_url = f"https://{token}@github.com/{repo}.git"
-        subprocess.run(["git", "push", remote_url, "HEAD:main"], check=True)
-
-        print("✅ Successfully committed & pushed updates to GitHub.")
-    except Exception as e:
-        print(f"⚠️ Auto-commit failed: {e}")
-
-# Call after learning updates (safe to call every run; pushes only if diffs exist)
-auto_git_commit()
-st.sidebar.success("✅ GitHub auto-update completed. View latest commit on GitHub.")
