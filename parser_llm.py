@@ -1825,12 +1825,180 @@ def analyze_feedback_and_learn(
 # 🧬 Auto-update this file’s regex lists from learned heuristics (SAFE)
 # ──────────────────────────────────────────────────────────────────────────────
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers for learning/patching
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _escape_field_to_regex(field_name: str) -> str:
+    """
+    Convert a schema field (e.g., 'Lactose Fermentation', 'Methyl Red', 'H2S')
+    into a safe regex token with word boundaries and flexible spacing.
+    Example: 'Lactose Fermentation' -> r"\blactose\s+fermentation\b"
+    """
+    s = (field_name or "").strip().lower()
+    # Normalize common schema typos so learning stays stable
+    s = s.replace("ornitihine", "ornithine")
+    # Escape and then convert spaces to \s+
+    # We escape everything, then replace escaped spaces with \s+ carefully.
+    parts = [re.escape(p) for p in s.split()]
+    if not parts:
+        return r"\b\b"  # degenerate but safe
+    return r"\b" + r"\s+".join(parts) + r"\b"
+
+
+def _normalize_regex_for_dedup(pat: str) -> str:
+    """
+    Normalize regex patterns so near-duplicates compare equal:
+    - Lowercase
+    - Convert literal spaces to \s+
+    - Collapse multiple \s+ to a single \s+
+    - Strip raw string prefix artifacts and trailing commas/comments
+    """
+    p = (pat or "").strip()
+    # remove raw string prefix and outer quotes if present
+    if p.startswith("r'") and p.endswith("'"):
+        p = p[2:-1]
+    elif p.startswith('r"') and p.endswith('"'):
+        p = p[2:-1]
+    elif (p.startswith("'") and p.endswith("'")) or (p.startswith('"') and p.endswith('"')):
+        p = p[1:-1]
+
+    p = p.lower()
+
+    # normalize whitespace: any literal spaces -> \s+
+    p = re.sub(r"\s+", r"\\s+", p)
+    # collapse repeated \s+
+    p = re.sub(r"(?:\\s\+)+", r"\\s+", p)
+
+    # remove trailing comments and commas if they were captured
+    p = p.split("#", 1)[0].rstrip().rstrip(",")
+
+    return p
+
+
+def _block_contains_pattern_semantically(block_text: str, new_raw_pattern: str) -> bool:
+    """
+    Check if a pattern semantically exists in the target list block.
+    We compare using normalized regex strings (ignoring raw string prefix,
+    spacing differences, and comments).
+    """
+    target = _normalize_regex_for_dedup(new_raw_pattern)
+
+    # Extract all r"...", "...", r'...', '...' inside the block for comparison
+    found = []
+    for m in re.finditer(r"""(?P<prefix>r)?(?P<q>["'])(?P<body>.*?)(?P=q)""", block_text, flags=re.S):
+        raw = (m.group(0) or "").strip()
+        norm = _normalize_regex_for_dedup(raw)
+        if norm:
+            found.append(norm)
+
+    return target in set(found)
+
+
+def _infer_polarity_from_text(s: str) -> str:
+    """
+    Infer polarity cue from a feedback rule string or text snippet.
+    Returns one of: 'positive', 'negative', 'variable', or '' if unknown.
+    Priority: negative > variable > positive (so 'not detected' wins over 'detected').
+    """
+    if not s:
+        return ""
+    txt = s.lower()
+
+    # Negative cues
+    neg_cues = [
+        "not detected", "not produced", "no ", "absent", "does not", "did not",
+        "fails to", "unable to", "negative", "-", "non-", "without", "not observed"
+    ]
+    if any(c in txt for c in neg_cues):
+        return "negative"
+
+    # Variable cues
+    var_cues = ["variable", "weak", "trace", "slight", "inconsistent", "equivocal"]
+    if any(c in txt for c in var_cues):
+        return "variable"
+
+    # Positive cues
+    pos_cues = ["positive", "+", "detected", "produced", "present"]
+    if any(c in txt for c in pos_cues):
+        return "positive"
+
+    return ""
+
+
+def _synthesize_rule_regex(field_name: str, polarity: str) -> str:
+    """
+    Build a robust regex for a learned rule:
+    - Anchors to the field (with \s+ between tokens)
+    - Appends a polarity-tail for positive/negative/variable
+    """
+    field_rx = _escape_field_to_regex(field_name)
+    if polarity == "negative":
+        tail = r".*(?:\-|negative|not\s+detected|not\s+produced|absent|no\s+\w+)"
+    elif polarity == "variable":
+        tail = r".*(?:variable|weak|trace|slight|inconsistent)"
+    else:  # positive (default)
+        tail = r".*(?:\+|positive|detected|produced|present)"
+
+    return f'r"{field_rx}{tail}"'
+
+
+def _pick_pattern_list_for_field(field_lower: str) -> str:
+    """
+    Map a (lowercased) field name to its pattern list constant name.
+    Includes fermentation, decarboxylases, gelatin, esculin, MR, nitrate, etc.
+    Returns '' if no matching list exists.
+    """
+    # Special-cases for schema typos and variants
+    field_lower = field_lower.replace("ornitihine", "ornithine")
+
+    mapping = {
+        "oxidase": "OXIDASE_PATTERNS",
+        "catalase": "CATALASE_PATTERNS",
+        "coagulase": "COAGULASE_PATTERNS",
+        "indole": "INDOLE_PATTERNS",
+        "urease": "UREASE_PATTERNS",
+        "citrate": "CITRATE_PATTERNS",
+        "methyl red": "MR_PATTERNS",
+        "mr": "MR_PATTERNS",
+        "vp": "VP_PATTERNS",
+        "voges": "VP_PATTERNS",
+        "h2s": "H2S_PATTERNS",
+        "nitrate": "NITRATE_PATTERNS",
+        "esculin": "ESCULIN_PATTERNS",
+        "dnase": "DNASE_PATTERNS",
+        "gelatin": "GELATIN_PATTERNS",
+        "lipase": "LIPASE_PATTERNS",
+        "lysine decarboxylase": "DECARBOXYLASE_PATTERNS",
+        "ornithine decarboxylase": "DECARBOXYLASE_PATTERNS",
+        "arginine dihydrolase": "DECARBOXYLASE_PATTERNS",
+    }
+
+    # Exact fermentation fields or any containing 'fermentation'
+    if "fermentation" in field_lower or field_lower.endswith(" fermentation"):
+        return "FERMENTATION_PATTERNS"
+
+    # Try exact mapping first
+    for key, plist in mapping.items():
+        if key in field_lower:
+            return plist
+
+    return ""
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Full-learning auto-updater (safe + dedup + smart spacing)
+# ──────────────────────────────────────────────────────────────────────────────
+
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
-    Automatically patch regex pattern lists when heuristics reach threshold.
-    - Adds capturing groups for key biochemical fields (fermentation, nitrate, MR, decarboxylase, esculin, gelatin).
-    - Skips adding identical rules already present.
-    - Handles flexible whitespace safely.
+    Fully-learned updater:
+      • Reads auto_heuristics from memory
+      • Infers polarity from feedback text
+      • Builds safe regex with \s+ spacing
+      • Adds to the appropriate *_PATTERNS list (if not already present)
+      • Performs semantic deduplication
+      • Leaves file untouched if no real changes are needed
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
@@ -1845,114 +2013,77 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         print(f"❌ Could not read parser file: {e}")
         return
 
-    pattern_lists = {
-        "oxidase": "OXIDASE_PATTERNS",
-        "catalase": "CATALASE_PATTERNS",
-        "indole": "INDOLE_PATTERNS",
-        "vp": "VP_PATTERNS",
-        "methyl red": "MR_PATTERNS",
-        "urease": "UREASE_PATTERNS",
-        "citrate": "CITRATE_PATTERNS",
-        "h2s": "H2S_PATTERNS",
-        "coagulase": "COAGULASE_PATTERNS",
-        "lipase": "LIPASE_PATTERNS",
-        "esculin": "ESCULIN_PATTERNS",
-        "dnase": "DNASE_PATTERNS",
-        "gelatin": "GELATIN_PATTERNS",
-        "nitrate": "NITRATE_PATTERNS",
-        "decarboxylase": "DECARBOXYLASE_PATTERNS",
-        "fermentation": "FERMENTATION_PATTERNS",
-    }
-
     updated = 0
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    for field, rule in auto_heuristics.items():
-        field_lower = field.lower()
-        pattern_list = next((v for k, v in pattern_lists.items() if k in field_lower), None)
+    # For each learned field → decide pattern list → synthesize a rule → inject if new
+    for field, meta in auto_heuristics.items():
+        if not field:
+            continue
+        field_str = str(field)
+        field_lower = field_str.lower()
+
+        pattern_list = _pick_pattern_list_for_field(field_lower)
         if not pattern_list:
+            # No known destination list; skip safely
             continue
 
-        frag = _regexify_field_name_for_whitespace(field_lower)
-        rule_txt = rule.get("rule", "").lower()
+        # Decide polarity from heuristic text (meta["rule"]) or fallback to positive
+        raw_rule_text = str(meta.get("rule", "")) if isinstance(meta, dict) else str(meta)
+        polarity = _infer_polarity_from_text(raw_rule_text) or "positive"
 
-        def build_learned_pattern(fragment, polarity_rule):
-            if any(k in polarity_rule for k in ["negative", "not"]):
-                return rf"\b{fragment}\b.*(?:negative|not\s+detected|not\s+produced)"
-            elif "positive" in polarity_rule:
-                return rf"\b{fragment}\b.*(?:positive|detected|produced)"
-            elif "variable" in polarity_rule or "weak" in polarity_rule:
-                return rf"\b{fragment}\b.*(?:variable|weak|trace|slight)"
-            else:
-                return rf"\b{fragment}\b.*reaction"
+        # Build a robust regex for this field
+        learned_regex = _synthesize_rule_regex(field_str, polarity)
 
-        # Capturing logic for complex biochemical fields
-        if pattern_list in {
-            "FERMENTATION_PATTERNS",
-            "DECARBOXYLASE_PATTERNS",
-            "GELATIN_PATTERNS",
-            "ESCULIN_PATTERNS",
-            "MR_PATTERNS",
-            "NITRATE_PATTERNS",
-        }:
-            base_match = re.match(r"^([a-z0-9\-]+)\s+", field_lower.strip())
-            base = re.escape(base_match.group(1)) if base_match else None
+        # Prepare insertion text (as raw-string literal)
+        insertion = f"    r{learned_regex},  # auto-learned {now} ({meta.get('count','?')}x)\n"
 
-            if "fermentation" in field_lower and base:
-                frag_captured = rf"(?P<base>{base})\s+fermentation"
-            elif "decarboxylase" in field_lower and base:
-                frag_captured = rf"(?P<base>{base})\s+decarboxylase"
-            elif "gelatin" in field_lower and base:
-                frag_captured = rf"(?P<base>{base})\s+hydrolysis"
-            elif "esculin" in field_lower and base:
-                frag_captured = rf"(?P<base>{base})\s+hydrolysis"
-            elif "nitrate" in field_lower and base:
-                frag_captured = rf"(?P<base>{base})\s+reduction"
-            elif "methyl red" in field_lower or field_lower.strip() == "mr":
-                frag_captured = rf"(?P<base>methyl)\s+red"
-            else:
-                frag_captured = frag
-
-            learned = build_learned_pattern(frag_captured, rule_txt)
-        else:
-            learned = build_learned_pattern(frag, rule_txt)
-
-        # Avoid duplicates
-        escaped_learned = re.escape(learned)
-        if re.search(escaped_learned, code):
-            print(f"⏩ Skipping duplicate pattern: {learned}")
+        # Find the block for the pattern list
+        block_re = re.compile(rf"({re.escape(pattern_list)}\s*=\s*\[)(.*?)(\])", flags=re.S)
+        m = block_re.search(code)
+        if not m:
+            # Pattern list doesn't exist in file; skip to be safe
+            print(f"ℹ️ Pattern list {pattern_list} not found; skipping {field_str}")
             continue
 
-        insertion = f'    r"{learned}",  # auto-learned {now} ({rule["count"]}x)\n'
-        pattern_block_regex = f"({re.escape(pattern_list)}\\s*=\\s*\\[)([^\\]]*)(\\])"
+        prefix, block_body, suffix = m.group(1), m.group(2), m.group(3)
 
-        new_code, count = re.subn(
-            pattern_block_regex,
-            lambda m: m.group(1) + m.group(2) + insertion + m.group(3),
-            code,
-            flags=re.S,
-        )
+        # Semantic dedup: if an equivalent rule already exists, skip
+        if _block_contains_pattern_semantically(block_body, insertion.strip()):
+            # Already present (semantically)
+            continue
 
-        if count > 0:
-            code = new_code
-            updated += 1
-            print(f"✅ Added learned pattern for {field} → {pattern_list}")
+        # Inject new rule just before the closing bracket
+        new_block_body = block_body + insertion
+        code = code[:m.start(2)] + new_block_body + code[m.end(2):]
+        updated += 1
+        print(f"✅ Learned pattern added for '{field_str}' → {pattern_list} ({polarity})")
 
-    if updated:
+    if updated > 0:
+        # Append a summary and write the file
         code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
-        for f, r in auto_heuristics.items():
-            code += f"# {f}: {r['rule']} (seen {r['count']}x)\n"
+        for fkey, meta in auto_heuristics.items():
+            try:
+                cnt = meta.get("count", "?") if isinstance(meta, dict) else "?"
+                rule_txt = meta.get("rule", "") if isinstance(meta, dict) else str(meta)
+            except Exception:
+                cnt, rule_txt = "?", ""
+            code += f"# {fkey}: {rule_txt} (seen {cnt}x)\n"
 
         try:
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
             print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
-            _sanitize_parser_file(parser_file)
+
+            # Final pass: sanitize to avoid line-ending/quote mishaps from auto-writes
+            try:
+                _sanitize_parser_file(parser_file)
+            except Exception as se:
+                print(f"⚠️ Post-write sanitize failed: {se}")
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
     else:
-        print("ℹ️ No new unique patterns to insert.")
-
+        print("ℹ️ No new unique patterns to add; file unchanged.")
 
 def _regexify_field_name_for_whitespace(field: str) -> str:
     """Converts e.g. 'nitrate reduction' → 'nitrate\\s+reduction' safely."""
