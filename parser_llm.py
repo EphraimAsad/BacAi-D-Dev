@@ -1198,6 +1198,57 @@ def _dedupe_keep_order(seq: List[str]) -> List[str]:
 def _pattern_exists(existing_list: List[str], candidate: str) -> bool:
     # Raw string literal content comparison
     return candidate in existing_list
+def auto_commit_changes():
+    """
+    Commit and push parser updates safely on Streamlit Cloud using HTTPS + token.
+    Requires env (or st.secrets bridged to env):
+      GH_TOKEN, GITHUB_REPO, [GIT_BRANCH], GIT_USER_NAME, GIT_USER_EMAIL
+    """
+    try:
+        gh_token  = os.getenv("GH_TOKEN", "").strip()
+        repo_slug = os.getenv("GITHUB_REPO", "").strip()  # e.g. "EphraimAsad/BacAi-D-Dev"
+        branch    = os.getenv("GIT_BRANCH", "main").strip()
+        user_name = os.getenv("GIT_USER_NAME", "auto-learner").strip()
+        user_email= os.getenv("GIT_USER_EMAIL", "auto@example.com").strip()
+
+        if not (gh_token and repo_slug):
+            print("⚠️ Skipping auto-commit: GH_TOKEN or GITHUB_REPO missing.")
+            return
+
+        # Configure identity & safe directory (Streamlit Cloud runs in a container)
+        os.system(f'git config --global user.name "{user_name}"')
+        os.system(f'git config --global user.email "{user_email}"')
+        os.system('git config --global --add safe.directory "$(pwd)"')
+
+        # Tokenized remote
+        remote_url_token = f"https://{gh_token}@github.com/{repo_slug}.git"
+        os.system(f'git remote set-url origin "{remote_url_token}"')
+
+        # Stage only files we mutate
+        files = [
+            os.getenv("PARSER_FILE", "parser_llm.py"),
+            os.getenv("MEMORY_PATH", "parser_memory.json"),
+            os.getenv("FEEDBACK_PATH", "parser_feedback.json"),
+        ]
+        files = " ".join(sorted(set(files)))
+        os.system(f"git add {files}")
+
+        # Commit if there are staged changes
+        # (git diff --cached --quiet returns non-zero when there ARE staged changes)
+        rc = os.system('git diff --cached --quiet || git commit -m "Auto-learned regex update [bot]"')
+        if rc == 0:
+            print("✅ Commit created.")
+        else:
+            print("ℹ️ No changes to commit or commit failed.")
+
+        # Push
+        push_rc = os.system(f'git push origin "{branch}"')
+        if push_rc != 0:
+            print("⚠️ git push failed. Check token scopes (repo) and branch name.")
+        else:
+            print("🚀 Changes pushed.")
+    except Exception as e:
+        print(f"❌ auto_commit_changes error: {e}")
 
 # 🧬 Auto-update this file’s regex lists from learned heuristics (FULL LEARNING)
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
