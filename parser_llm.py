@@ -6,6 +6,7 @@
 #   • Persistent self-learning from gold_tests + live runs (3-strike rule idea)
 #   • Auto-injection of learned regex lines back into this file (safe patcher)
 #   • Sanitizers that fix bad escapes / unterminated raw strings BEFORE parsing
+#   • Git auto-commit/push (Option B): triggered at the END of auto_update_parser_regex()
 #   • CLI: python parser_llm.py --test  → runs gold_tests.json, learns, patches
 #
 # Files used:
@@ -13,10 +14,19 @@
 #   • parser_feedback.json     ← logs mismatches from tests/runs
 #   • parser_memory.json       ← learned summaries & auto_heuristics
 #
-# Env:
+# Env (use Streamlit secrets or real env):
 #   • OLLAMA_API_KEY           ← your cloud API key (if using Ollama Cloud)
 #   • LOCAL_MODEL              ← default "deepseek-v3.1:671b"
 #   • BACTAI_STRICT_MODE       ← "1" for strict schema-only output
+#   • ENABLE_AUTO_COMMIT       ← "true" to enable auto-commit/push after patch
+#   • GH_TOKEN                 ← GitHub token with repo scope
+#   • GITHUB_REPO              ← e.g. "EphraimAsad/BacAi-D-Dev"
+#   • GIT_BRANCH               ← default "main"
+#   • GIT_USER_NAME            ← e.g. "EphraimAsad"
+#   • GIT_USER_EMAIL           ← e.g. "zainasad98@gmail.com"
+#   • PARSER_FILE              ← default "parser_llm.py"
+#   • MEMORY_PATH              ← default "parser_memory.json"
+#   • FEEDBACK_PATH            ← default "parser_feedback.json"
 #
 # Public API:
 #   parse_input_free_text(text, prior_facts=None, db_fields=None) -> Dict[str,str]
@@ -38,15 +48,17 @@ import difflib
 from datetime import datetime
 from typing import Dict, List, Set, Tuple, Optional
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Load Streamlit secrets into env (if present), without overwriting existing
+# ──────────────────────────────────────────────────────────────────────────────
 def _load_streamlit_secrets_into_env():
     try:
         import streamlit as st
-        # copy (but don't overwrite) into os.environ
         for k, v in st.secrets.items():
             if k not in os.environ:
                 os.environ[k] = str(v)
     except Exception:
-        # not running in Streamlit, ignore
+        # Not in Streamlit or no secrets — fine.
         pass
 
 _load_streamlit_secrets_into_env()
@@ -108,12 +120,10 @@ def _sanitize_auto_learned_patterns(file_path: str) -> None:
 
         original = content
 
-        # Keep raw-strings intact; just normalize accidental half-escapes.
-        # Intentionally simple: we don't attempt deep AST edits here.
-        # Normalize r"\ " (backslash-space) → "\s+" intent is handled elsewhere.
+        # Normalize accidental backslash+space to \s+ where it occurs literally.
         content = content.replace(r'\ ', r'\\s+')
 
-        # Remove accidental CR nulls or stray NULs if they appeared
+        # Remove accidental NULs if any crept in
         content = content.replace("\x00", "")
 
         if content != original:
@@ -140,7 +150,6 @@ def _repair_parser_file(file_path: str) -> None:
         lines = content.splitlines()
         out_lines: List[str] = []
 
-        # Track whether we're inside a pattern list by a simple heuristic.
         inside_list = False
         open_brackets = 0
 
@@ -176,7 +185,6 @@ def _repair_parser_file(file_path: str) -> None:
     except Exception as e:
         print(f"⚠️ Parser file repair failed: {e}")
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Persistent storage paths
 # ──────────────────────────────────────────────────────────────────────────────
@@ -205,7 +213,6 @@ def _save_json(path: str, obj) -> None:
             json.dump(obj, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Schema allowed values (aligned with your Excel)
@@ -449,6 +456,7 @@ FERMENTATION_PATTERNS = [
     r"(?:ferments?|utilizes?)[^.]*?\bbut\s+not\s+([\w\s,;.&-]+)",
     r"\b([a-z0-9\-]+)\s*(?:fermentation)?\s*([+\-])\b",
 ]
+
 # Helpers: columns, normalization, aliases, tokens
 _SUBSCRIPT_DIGITS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
 
@@ -904,7 +912,7 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
 
     def canon_media(name: str) -> Optional[str]:
         if name in {"xld"}: return "XLD Agar"
-        if name in {"macconkey"}: return "MacConkey Agar"
+        if name in {"macconkey"}: return "MacConKey Agar" if False else "MacConKey Agar".replace("Key","key")  # maintain title-case; result "MacConkey Agar"
         if name in {"blood","ba","ssa"}: return "Blood Agar"
         if name == "nutrient": return "Nutrient Agar"
         if name == "tsa": return "Tryptic Soy Agar"
@@ -914,10 +922,15 @@ def extract_biochem_regex(text: str, db_fields: List[str]) -> Dict[str, str]:
             return name[:-5].strip().title() + " Agar"
         return None
 
+    # fix "MacConKey Agar" correction above to actual canonical
+    def _fix_mac(name: str) -> str:
+        return "MacConkey Agar" if name.lower().startswith("maccon") else name
+
     for nm in candidate_media:
         pretty = canon_media(nm)
         if not pretty:
             continue
+        pretty = _fix_mac(pretty)
         canon = next((w for w in MEDIA_WHITELIST if w.lower() == pretty.lower()), pretty)
         if canon not in collected_media:
             collected_media.append(canon)
@@ -1042,42 +1055,32 @@ def parse_input_free_text(
     # Normalize
     normalized = normalize_to_schema(merged, db_fields)
     return normalized
-# WHAT-IF helper
-def apply_what_if(user_text: str, prior_result: Dict[str, str], db_fields: List[str]) -> Dict[str, str]:
-    if not (user_text and prior_result):
-        return prior_result or {}
 
-    alias = build_alias_map(db_fields)
-    txt = normalize_text(user_text)
-    patterns = [
-        r"what\s+if\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes|turned|changed\s+to)\s+([a-z\+\-]+)",
-        r"suppose\s+([a-z\s]+?)\s+(?:is|was|were|became|becomes)\s+([a-z\+\-]+)",
-        r"if\s+it\s+(?:is|was|were)\s+([a-z\s]+?)\s*(?:instead)?\s*(?:of|to)?\s*([a-z\+\-]+)?",
-        r"change\s+([a-z\s]+?)\s+to\s+([a-z\+\-]+)"
-    ]
-    for pat in patterns:
-        m = re.search(pat, txt)
-        if m:
-            field = (m.group(1) or "").strip()
-            new_val = (m.group(2) or "").strip() if m.lastindex and m.lastindex >= 2 else ""
-            target = alias.get(field.lower(), None) or field.title()
-            new_val = _canon_value(target, new_val.title())
-            if target in prior_result and new_val:
-                new_dict = dict(prior_result)
-                new_dict[target] = new_val
-                return new_dict
-    return prior_result
+# ===================================================================
+# 🔁 “What-if” incremental re-parse
+# ===================================================================
+def apply_what_if(user_text: str, prior_result: Dict[str,str], db_fields: List[str]) -> Dict[str,str]:
+    """
+    Re-parse a single new description while preserving known facts.
+    """
+    fresh = parse_input_free_text(user_text, prior_result, db_fields)
+    merged = {**prior_result, **fresh}
+    return normalize_to_schema(merged, db_fields)
 
-# GOLD TESTS
+
+# ===================================================================
+# 🧪 Gold-standard test harness + feedback memory
+# ===================================================================
 def _diff_for_feedback(expected: Dict[str,str], got: Dict[str,str]) -> List[Dict[str,str]]:
     diffs = []
     for k, exp in expected.items():
-        g = got.get(k, None)
+        g = got.get(k)
         if g is None:
             diffs.append({"field": k, "expected": exp, "got": ""})
         elif str(g) != str(exp):
             diffs.append({"field": k, "expected": exp, "got": g})
     return diffs
+
 
 def _log_feedback_case(name: str, text: str, diffs: List[Dict[str,str]]):
     if not diffs:
@@ -1091,23 +1094,19 @@ def _log_feedback_case(name: str, text: str, diffs: List[Dict[str,str]]):
     })
     _save_json(FEEDBACK_PATH, feedback)
 
+
 def run_gold_tests(db_fields: Optional[List[str]] = None) -> Tuple[int,int]:
-    print("Running Gold Tests...")
+    """
+    Execute gold_tests.json and record mismatches to feedback.
+    """
+    print("🧪 Running gold tests…")
     tests = _load_json(GOLD_TESTS_PATH, [])
     if not tests:
-        print("No gold_tests.json found or file empty. Skipping.")
+        print("ℹ️ No gold_tests.json found or file empty.")
         return (0, 0)
 
     if db_fields is None:
-        # Minimal schema superset (aligns with your Excel header set)
-        db_fields = [
-            "Genus","Gram Stain","Shape","Catalase","Oxidase","Colony Morphology","Haemolysis","Haemolysis Type","Indole",
-            "Growth Temperature","Media Grown On","Motility","Capsule","Spore Formation","Oxygen Requirement","Methyl Red","VP",
-            "Citrate","Urease","H2S","Lactose Fermentation","Glucose Fermentation","Sucrose Fermentation","Nitrate Reduction",
-            "Lysine Decarboxylase","Ornitihine Decarboxylase","Arginine dihydrolase","Gelatin Hydrolysis","Esculin Hydrolysis","Dnase",
-            "ONPG","NaCl Tolerant (>=6%)","Lipase Test","Xylose Fermentation","Rhamnose Fermentation","Mannitol Fermentation",
-            "Sorbitol Fermentation","Maltose Fermentation","Arabinose Fermentation","Raffinose Fermentation","Inositol Fermentation","Trehalose Fermentation","Coagulase"
-        ]
+        db_fields = list(ALLOWED_VALUES.keys())
 
     total, passed = 0, 0
     for case in tests:
@@ -1116,26 +1115,27 @@ def run_gold_tests(db_fields: Optional[List[str]] = None) -> Tuple[int,int]:
         input_text = case.get("input", "")
         expected_raw = case.get("expected", {})
 
-        # Keep only expected fields present in the active schema
         expected = {k: v for k, v in expected_raw.items() if k in db_fields}
-
         got = parse_input_free_text(input_text, db_fields=db_fields)
         diffs = _diff_for_feedback(expected, got)
-        ok = (not diffs)
+        ok = not diffs
 
         if ok:
             passed += 1
-            print(f"✅ {name} passed.")
+            print(f"✅ {name} passed")
         else:
-            print(f"❌ {name} failed.")
+            print(f"❌ {name} failed:")
             for d in diffs[:10]:
                 print(f"   - {d['field']}: expected '{d['expected']}' got '{d['got']}'")
             _log_feedback_case(name, input_text, diffs)
 
-    print(f"Gold Tests: {passed}/{total} passed.")
+    print(f"Gold tests: {passed}/{total} passed.")
     return (passed, total)
 
-# 🧠 Self-learning: analyze feedback → memory (3-strike-ish heuristics)
+
+# ===================================================================
+# 🧠 Feedback learning memory
+# ===================================================================
 def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_PATH):
     feedback = _load_json(feedback_path, [])
     if not feedback:
@@ -1143,8 +1143,8 @@ def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_P
 
     memory = _load_json(memory_path, {})
     history = memory.get("history", [])
-    field_counts = {}
-    suggestions = []
+    field_counts: Dict[str,int] = {}
+    suggestions: List[str] = []
 
     for case in feedback:
         for err in case.get("errors", []):
@@ -1156,9 +1156,9 @@ def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_P
             field_counts[field] = field_counts.get(field, 0) + 1
             sim = difflib.SequenceMatcher(None, got, exp).ratio()
             if sim < 0.6:
-                suggestions.append(f"Consider adjusting pattern for '{field}' — often parsed '{got}' instead of '{exp}'")
+                suggestions.append(f"Consider adjusting pattern for '{field}' — parsed '{got}' instead of '{exp}'")
 
-    auto_heuristics = {}
+    auto_heuristics: Dict[str,Dict] = {}
     for field, count in field_counts.items():
         if count >= 3:
             rule = f"Add stronger regex matching for '{field}' with negation/positive terms"
@@ -1172,97 +1172,102 @@ def analyze_feedback_and_learn(feedback_path=FEEDBACK_PATH, memory_path=MEMORY_P
     memory["history"] = history
     memory["auto_heuristics"] = auto_heuristics
     _save_json(memory_path, memory)
-    print(f"🧠 Learned hints for {len(auto_heuristics)} fields; updated memory.")
+    print(f"🧠 Learned hints for {len(auto_heuristics)} fields; memory updated.")
 
-# Utilities for autopatcher
+
+# ===================================================================
+# 🔧 Helper utilities for auto-learning regex patcher
+# ===================================================================
 def _escape_for_raw_regex(text: str) -> str:
     """
-    Convert a human-ish term (possibly with spaces) into a safe raw-regex token.
-    - Collapse any literal backslash+space ('\ ') into '\\s+'
-    - Replace literal spaces with '\\s+'
+    Convert a human term (with spaces) into safe raw-regex token.
     """
-    # First normalize occurrences of backslash + space to \s+
     text = text.replace(r"\ ", r"\\s+")
-    # Then replace remaining literal spaces with \s+
     text = re.sub(r"\s+", r"\\s+", text.strip())
     return text
 
+
 def _dedupe_keep_order(seq: List[str]) -> List[str]:
-    seen = set()
-    out = []
+    seen, out = set(), []
     for s in seq:
         if s not in seen:
-            out.append(s); seen.add(s)
+            seen.add(s)
+            out.append(s)
     return out
 
+
 def _pattern_exists(existing_list: List[str], candidate: str) -> bool:
-    # Raw string literal content comparison
     return candidate in existing_list
-def auto_commit_changes():
+
+
+# ===================================================================
+# 🚀 Auto-commit to GitHub (Option B – improved diagnostics)
+# ===================================================================
+def auto_commit_changes(repo_path=".", commit_msg="Auto-update regex patterns"):
     """
-    Commit and push parser updates safely on Streamlit Cloud using HTTPS + token.
-    Requires env (or st.secrets bridged to env):
-      GH_TOKEN, GITHUB_REPO, [GIT_BRANCH], GIT_USER_NAME, GIT_USER_EMAIL
+    Commits parser_llm.py + memory files back to the remote repo if enabled.
     """
+    import subprocess, shlex
+
+    enabled = os.getenv("ENABLE_AUTO_COMMIT", "false").lower() == "true"
+    token   = os.getenv("GH_TOKEN")
+    repo    = os.getenv("GITHUB_REPO", "")
+    branch  = os.getenv("GIT_BRANCH", "main")
+    uname   = os.getenv("GIT_USER_NAME", "auto-learner")
+    email   = os.getenv("GIT_USER_EMAIL", "auto@local")
+
+    if not enabled:
+        print("ℹ️ Auto-commit disabled by config.")
+        return False
+    if not (token and repo):
+        print("⚠️ Missing GH_TOKEN or GITHUB_REPO — cannot commit.")
+        return False
+
+    print(f"🔧 Preparing auto-commit for {repo} on branch '{branch}'…")
+
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+
     try:
-        gh_token  = os.getenv("GH_TOKEN", "").strip()
-        repo_slug = os.getenv("GITHUB_REPO", "").strip()  # e.g. "EphraimAsad/BacAi-D-Dev"
-        branch    = os.getenv("GIT_BRANCH", "main").strip()
-        user_name = os.getenv("GIT_USER_NAME", "auto-learner").strip()
-        user_email= os.getenv("GIT_USER_EMAIL", "auto@example.com").strip()
+        subprocess.run(["git", "config", "--global", "user.name", uname], check=True, env=env)
+        subprocess.run(["git", "config", "--global", "user.email", email], check=True, env=env)
+        subprocess.run(["git", "add", "parser_llm.py", "parser_memory.json", "parser_feedback.json"], check=True, env=env)
+        status = subprocess.run(["git", "status", "--short"], capture_output=True, text=True, env=env)
+        print(status.stdout)
 
-        if not (gh_token and repo_slug):
-            print("⚠️ Skipping auto-commit: GH_TOKEN or GITHUB_REPO missing.")
-            return
+        if not status.stdout.strip():
+            print("ℹ️ No changes to commit.")
+            return True
 
-        # Configure identity & safe directory (Streamlit Cloud runs in a container)
-        os.system(f'git config --global user.name "{user_name}"')
-        os.system(f'git config --global user.email "{user_email}"')
-        os.system('git config --global --add safe.directory "$(pwd)"')
+        subprocess.run(["git", "commit", "-m", commit_msg], check=True, env=env)
 
-        # Tokenized remote
-        remote_url_token = f"https://{gh_token}@github.com/{repo_slug}.git"
-        os.system(f'git remote set-url origin "{remote_url_token}"')
-
-        # Stage only files we mutate
-        files = [
-            os.getenv("PARSER_FILE", "parser_llm.py"),
-            os.getenv("MEMORY_PATH", "parser_memory.json"),
-            os.getenv("FEEDBACK_PATH", "parser_feedback.json"),
-        ]
-        files = " ".join(sorted(set(files)))
-        os.system(f"git add {files}")
-
-        # Commit if there are staged changes
-        # (git diff --cached --quiet returns non-zero when there ARE staged changes)
-        rc = os.system('git diff --cached --quiet || git commit -m "Auto-learned regex update [bot]"')
-        if rc == 0:
-            print("✅ Commit created.")
-        else:
-            print("ℹ️ No changes to commit or commit failed.")
-
-        # Push
-        push_rc = os.system(f'git push origin "{branch}"')
-        if push_rc != 0:
-            print("⚠️ git push failed. Check token scopes (repo) and branch name.")
-        else:
-            print("🚀 Changes pushed.")
+        remote_url = f"https://{token}@github.com/{repo}.git"
+        subprocess.run(["git", "remote", "set-url", "origin", remote_url], check=True, env=env)
+        subprocess.run(["git", "push", "origin", branch], check=True, env=env)
+        print("✅ Changes committed & pushed successfully.")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git command failed: {e}")
+        return False
     except Exception as e:
-        print(f"❌ auto_commit_changes error: {e}")
+        print(f"❌ Auto-commit error: {e}")
+        return False
 
-# 🧬 Auto-update this file’s regex lists from learned heuristics (FULL LEARNING)
+
+# ===================================================================
+# 🧩 Full-learning autopatcher for regex patterns
+# ===================================================================
 def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
     """
-    Automatically patch regex pattern lists when heuristics reach threshold.
-    Includes space-escaping fix and *deduplication* (won't re-add identical rules).
+    Applies learned regex heuristics into *_PATTERNS lists.
+    Deduplicates, sanitizes, commits to Git if enabled.
     """
     memory = _load_json(memory_path, {})
     auto_heuristics = memory.get("auto_heuristics", {})
     if not auto_heuristics:
-        print("ℹ️ No new regex heuristics to apply.")
+        print("ℹ️ No new heuristics to apply.")
         return
 
-    # Map fields → pattern list names (full-learning)
     pattern_lists_map = {
         "oxidase": "OXIDASE_PATTERNS",
         "catalase": "CATALASE_PATTERNS",
@@ -1283,7 +1288,6 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         "ornithine decarboxylase": "DECARBOXYLASE_PATTERNS",
         "ornitihine decarboxylase": "DECARBOXYLASE_PATTERNS",
         "arginine dihydrolase": "DECARBOXYLASE_PATTERNS",
-        # Fermentations (generic bucket)
         "lactose fermentation": "FERMENTATION_PATTERNS",
         "glucose fermentation": "FERMENTATION_PATTERNS",
         "sucrose fermentation": "FERMENTATION_PATTERNS",
@@ -1296,10 +1300,9 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         "raffinose fermentation": "FERMENTATION_PATTERNS",
         "inositol fermentation": "FERMENTATION_PATTERNS",
         "trehalose fermentation": "FERMENTATION_PATTERNS",
-        "onpg": "DNASE_PATTERNS"  # ONPG not separate list; leave as generic fallback list if needed
+        "onpg": "DNASE_PATTERNS",
     }
 
-    # Load this file's code
     try:
         with open(parser_file, "r", encoding="utf-8") as f:
             code = f.read()
@@ -1307,126 +1310,199 @@ def auto_update_parser_regex(memory_path=MEMORY_PATH, parser_file=__file__):
         print(f"❌ Could not read parser file: {e}")
         return
 
-    # Prepare a live namespace to access current lists for dedupe
-    ns = {}
+    ns: Dict[str, object] = {}
     try:
         exec(compile(code, parser_file, "exec"), ns, ns)
     except Exception as e:
-        # Attempt basic repair/sanitize then re-exec once
+        print(f"⚠️ Parser introspection failed: {e}. Attempting repair…")
+        _repair_parser_file(parser_file)
+        _sanitize_parser_file(parser_file)
+        _sanitize_auto_learned_patterns(parser_file)
         try:
-            _repair_parser_file(parser_file)
-            _sanitize_auto_learned_patterns(parser_file)
             with open(parser_file, "r", encoding="utf-8") as f:
                 code = f.read()
             exec(compile(code, parser_file, "exec"), ns, ns)
         except Exception as e2:
-            print(f"❌ Failed to exec parser for introspection: {e2}")
+            print(f"❌ Still failed to exec after repair: {e2}")
             return
 
     updated = 0
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def add_rule_to_list(list_name: str, raw_regex_literal: str) -> Tuple[str, bool]:
-        """
-        Insert `raw_regex_literal` (already formatted like r"...") into `list_name` safely.
-        Returns (new_code, inserted?)
-        """
+    def add_rule_to_list(list_name: str, raw_regex_literal: str) -> Tuple[str,bool]:
         nonlocal code
-        # Extract existing list via regex
-        pattern_block_regex = rf"({re.escape(list_name)}\s*=\s*\[)([^]]*)(\])"
-        m = re.search(pattern_block_regex, code, flags=re.S)
+        pattern_block = rf"({re.escape(list_name)}\s*=\s*\[)([^]]*)(\])"
+        m = re.search(pattern_block, code, flags=re.S)
         if not m:
             return (code, False)
         head, body, tail = m.group(1), m.group(2), m.group(3)
-
-        # Build a list of existing raw items for dedupe
-        existing_items = re.findall(r'r"[^"]*"|r\'[^\']*\'', body)
-        if raw_regex_literal in existing_items:
+        existing = re.findall(r'r"[^"]*"|r\'[^\']*\'', body)
+        if raw_regex_literal in existing:
             return (code, False)
-
-        # Append with proper indentation
         insertion = f"\n    {raw_regex_literal},  # auto-learned {now}"
         new_body = body + insertion
         new_code = code[:m.start()] + head + new_body + tail + code[m.end():]
         return (new_code, True)
 
-    # For each heuristic, create both a positive and negative generic pattern covering spaces
     for field, rule in auto_heuristics.items():
         field_l = field.lower().strip()
         list_name = None
-        # Try direct mapping first
         if field_l in pattern_lists_map:
             list_name = pattern_lists_map[field_l]
         else:
-            # Heuristic: try to find any mapped key contained in field name
             for k, v in pattern_lists_map.items():
                 if k in field_l:
                     list_name = v
                     break
         if not list_name:
-            # Skip if we don't have a known bucket for this field
             continue
 
-        # Build safe regex tokens
         safe_field = _escape_for_raw_regex(field_l)
-
-        # Positive/negative generic captures
         pos_pat = f'r"\\b{safe_field}\\b.*(?:positive|\\+|detected|produced)"'
         neg_pat = f'r"\\b{safe_field}\\b.*(?:negative|\\-|not\\s+detected|absent|not\\s+produced)"'
-
-        # Insert if not present (dedup)
         code, ins1 = add_rule_to_list(list_name, pos_pat)
         code, ins2 = add_rule_to_list(list_name, neg_pat)
         if ins1 or ins2:
             updated += 1
-            print(f"✅ Added learned pattern(s) for '{field}' → {list_name}")
+            print(f"✅ Learned pattern(s) for '{field}' → {list_name}")
 
-    # Append summary comment
     if updated > 0:
-        code += f"\n\n# === AUTO-LEARNED PATTERNS SUMMARY ({now}) ===\n"
+        code += f"\n\n# === AUTO-LEARNED SUMMARY ({now}) ===\n"
         for f_name, rinfo in auto_heuristics.items():
-            code += f"# {f_name}: {rinfo['rule']} (seen {rinfo['count']}x)\n"
-
+            code += f"# {f_name}: {rinfo['rule']} (seen {rinfo['count']}×)\n"
         try:
             with open(parser_file, "w", encoding="utf-8") as f:
                 f.write(code)
             print(f"🧠 Updated {os.path.basename(parser_file)} with {updated} new regex patterns.")
-            # Final safety pass
             _sanitize_parser_file(parser_file)
             _sanitize_auto_learned_patterns(parser_file)
             _repair_parser_file(parser_file)
+            auto_commit_changes(".", f"Auto-update regex ({updated} new patterns)")
         except Exception as e:
             print(f"❌ Failed to write updates: {e}")
     else:
-        print("ℹ️ No new unique patterns to add.")
-
-# Convenience bootstrap: run learning + optional gold tests + auto-patch
+        print("ℹ️ No unique patterns to add.")
+# ===================================================================
+# 🚦 Bootstrap: enable self-learning + optional gold tests
+# ===================================================================
 def enable_self_learning_autopatch(run_tests: bool = False, db_fields: Optional[List[str]] = None):
     """
-    Typical Streamlit usage in app.py/app_chat.py:
+    Typical Streamlit usage (early in app startup):
         from parser_llm import enable_self_learning_autopatch
         enable_self_learning_autopatch(run_tests=False)
+
+    Steps:
+      1) (optional) run_gold_tests()
+      2) analyze_feedback_and_learn()
+      3) auto_update_parser_regex()  → writes back into this file safely
+      4) (optional) auto_commit_changes() is called inside auto_update when changes exist
     """
-    if run_tests:
-        run_gold_tests(db_fields=db_fields)
-    analyze_feedback_and_learn()
-    auto_update_parser_regex()
-
-# At the very end of auto_update_parser_regex(), after the write/sanitize passes:
-if os.getenv("ENABLE_AUTO_COMMIT", "false").lower() == "true":
-    auto_commit_changes()
-
-# CLI
-if __name__ == "__main__":
-    # Defensive cleanups if you ever call this directly
+    # Defensive: a quick sanitize/repair pass before doing anything
     this_file = __file__
     _sanitize_parser_file(this_file)
     _sanitize_auto_learned_patterns(this_file)
     _repair_parser_file(this_file)
 
-    if "--test" in sys.argv:
-        run_gold_tests()
+    if run_tests:
+        try:
+            run_gold_tests(db_fields=db_fields)
+        except Exception as e:
+            print(f"⚠️ run_gold_tests failed but continuing: {e}")
+
+    try:
         analyze_feedback_and_learn()
+    except Exception as e:
+        print(f"⚠️ analyze_feedback_and_learn failed but continuing: {e}")
+
+    try:
         auto_update_parser_regex()
-        sys.exit(0)
-    print("parser_llm.py loaded. Use --test to run gold tests (learns & patches).")
+    except Exception as e:
+        print(f"⚠️ auto_update_parser_regex failed: {e}")
+
+
+# ===================================================================
+# 🧰 Optional: immediate auto-commit on import if toggled
+#   (Useful when this module is executed in a one-off worker)
+# ===================================================================
+if os.getenv("ENABLE_AUTO_COMMIT_ON_IMPORT", "false").lower() == "true":
+    try:
+        auto_commit_changes(".", "Auto-commit on import")
+    except Exception as e:
+        print(f"⚠️ Auto-commit-on-import failed: {e}")
+
+
+# ===================================================================
+# 🖥️ CLI entrypoint
+#   Examples:
+#     python parser_llm.py --test
+#     python parser_llm.py --learn
+#     python parser_llm.py --patch
+#     python parser_llm.py --commit
+#     python parser_llm.py --all
+# ===================================================================
+if __name__ == "__main__":
+    # Defensive cleanups every time we run as a script
+    this_file = __file__
+    _sanitize_parser_file(this_file)
+    _sanitize_auto_learned_patterns(this_file)
+    _repair_parser_file(this_file)
+
+    args = set(a.lower() for a in sys.argv[1:])
+
+    did_any = False
+
+    if "--test" in args:
+        did_any = True
+        try:
+            run_gold_tests()
+        except Exception as e:
+            print(f"❌ Gold tests failed: {e}")
+
+    if "--learn" in args:
+        did_any = True
+        try:
+            analyze_feedback_and_learn()
+        except Exception as e:
+            print(f"❌ analyze_feedback_and_learn failed: {e}")
+
+    if "--patch" in args:
+        did_any = True
+        try:
+            auto_update_parser_regex()
+        except Exception as e:
+            print(f"❌ auto_update_parser_regex failed: {e}")
+
+    if "--commit" in args:
+        did_any = True
+        try:
+            auto_commit_changes(".", "Manual commit via CLI")
+        except Exception as e:
+            print(f"❌ auto_commit_changes failed: {e}")
+
+    if "--all" in args:
+        did_any = True
+        try:
+            run_gold_tests()
+        except Exception as e:
+            print(f"❌ Gold tests failed: {e}")
+        try:
+            analyze_feedback_and_learn()
+        except Exception as e:
+            print(f"❌ analyze_feedback_and_learn failed: {e}")
+        try:
+            auto_update_parser_regex()
+        except Exception as e:
+            print(f"❌ auto_update_parser_regex failed: {e}")
+
+    if not did_any:
+        print(
+            "parser_llm.py loaded.\n"
+            "Use one of:\n"
+            "  --test    Run gold tests and log feedback\n"
+            "  --learn   Analyze feedback → memory\n"
+            "  --patch   Apply learned regex updates to *_PATTERNS\n"
+            "  --commit  Force a commit/push (if ENABLE_AUTO_COMMIT=true)\n"
+            "  --all     test → learn → patch\n"
+        )
+
+
