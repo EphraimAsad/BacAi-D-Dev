@@ -1,10 +1,27 @@
-numpy
+# Core framework
 streamlit>=1.38
 pandas>=2.2
-fpdf2>=2.7
+numpy>=1.26
 openpyxl>=3.1
-openai>=2.7.1     # GPT option
-ollama     # Local option (okay if not used; app falls back)
+
+# PDF export
+fpdf2>=2.7
+
+# AI + parsing integration
+openai>=2.7.1       # optional GPT connector
+ollama>=0.1.8       # local LLM runtime API support
+
+# JSON + Schema handling (used by parser feedback + memory)
+jsonschema>=4.22
+typing-extensions>=4.10
+
+# Git and system process integration (for auto-commit + subprocess)
+gitpython>=3.1.43
+requests>=2.32
+python-dotenv>=1.0  # optional, supports local secrets handling
+
+# Safe runtime environment for Streamlit Cloud
+tqdm>=4.66          # progress bar for CLI
 
 
 
