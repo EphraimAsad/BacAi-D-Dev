@@ -69210,6 +69210,73 @@
         "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
         "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'"
       ]
+    },
+    {
+      "timestamp": "2025-11-14 22:54:35",
+      "top_error_fields": [
+        [
+          "Glucose Fermentation",
+          225
+        ],
+        [
+          "Media Grown On",
+          171
+        ],
+        [
+          "Growth Temperature",
+          110
+        ],
+        [
+          "Sucrose Fermentation",
+          92
+        ],
+        [
+          "Lactose Fermentation",
+          92
+        ],
+        [
+          "Mannitol Fermentation",
+          84
+        ],
+        [
+          "Colony Morphology",
+          65
+        ],
+        [
+          "Spore Formation",
+          38
+        ],
+        [
+          "Haemolysis",
+          33
+        ],
+        [
+          "Oxygen Requirement",
+          32
+        ]
+      ],
+      "suggestions": [
+        "Consider adjusting pattern for 'DNase' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Glucose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Sucrose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Lactose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'NaCl Tolerant (>=6%)' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Glucose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Mannitol Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Arabinose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Raffinose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Spore Formation' — often parsed 'positive' instead of 'negative'",
+        "Consider adjusting pattern for 'Media Grown On' — often parsed 'beta-haemolytic on blood agar; blood agar' instead of 'aloa'",
+        "Consider adjusting pattern for 'Glucose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Maltose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Rhamnose Fermentation' — often parsed '' instead of 'positive'",
+        "Consider adjusting pattern for 'Xylose Fermentation' — often parsed '' instead of 'negative'",
+        "Consider adjusting pattern for 'Motility' — often parsed 'positive' instead of 'motile'",
+        "Consider adjusting pattern for 'Media Grown On' — often parsed 'grows on macconkey agar; macconkey agar' instead of 'macconkey agar'"
+      ]
     }
   ],
   "auto_heuristics": {
